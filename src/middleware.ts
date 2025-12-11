@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
     "/auth/signin",
     "/auth/callback",
     "/auth/error",
+    "/auth/admin",
   ];
 
   // API routes that don't need activation check
