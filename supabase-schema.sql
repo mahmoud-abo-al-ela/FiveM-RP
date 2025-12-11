@@ -138,6 +138,32 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Rules categories table
+CREATE TABLE IF NOT EXISTS rule_categories (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE,
+  icon TEXT NOT NULL,
+  color TEXT NOT NULL,
+  description TEXT,
+  display_order INTEGER DEFAULT 0,
+  visible BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Rules table
+CREATE TABLE IF NOT EXISTS rules (
+  id SERIAL PRIMARY KEY,
+  category_id INTEGER REFERENCES rule_categories(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  display_order INTEGER DEFAULT 0,
+  visible BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -157,6 +183,10 @@ CREATE INDEX IF NOT EXISTS idx_events_expiration_date ON events(expiration_date)
 CREATE INDEX IF NOT EXISTS idx_leaderboard_category_rank ON leaderboard(category, rank);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, read);
 CREATE INDEX IF NOT EXISTS idx_server_status_updated_at ON server_status(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_rule_categories_slug ON rule_categories(slug);
+CREATE INDEX IF NOT EXISTS idx_rule_categories_display_order ON rule_categories(display_order);
+CREATE INDEX IF NOT EXISTS idx_rules_category_id ON rules(category_id);
+CREATE INDEX IF NOT EXISTS idx_rules_display_order ON rules(display_order);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -169,6 +199,8 @@ ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rule_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rules ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 
@@ -256,3 +288,41 @@ CREATE POLICY "Users can update own notifications" ON notifications
 
 CREATE POLICY "System can create notifications" ON notifications
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Helper function to check if user is admin
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM users
+    WHERE id = auth.uid()
+    AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Rule categories: Public read, admin write
+CREATE POLICY "Rule categories are publicly readable" ON rule_categories
+  FOR SELECT USING (true);
+
+CREATE POLICY "Admins can insert rule categories" ON rule_categories
+  FOR INSERT WITH CHECK (is_admin());
+
+CREATE POLICY "Admins can update rule categories" ON rule_categories
+  FOR UPDATE USING (is_admin());
+
+CREATE POLICY "Admins can delete rule categories" ON rule_categories
+  FOR DELETE USING (is_admin());
+
+-- Rules: Public read, admin write
+CREATE POLICY "Rules are publicly readable" ON rules
+  FOR SELECT USING (true);
+
+CREATE POLICY "Admins can insert rules" ON rules
+  FOR INSERT WITH CHECK (is_admin());
+
+CREATE POLICY "Admins can update rules" ON rules
+  FOR UPDATE USING (is_admin());
+
+CREATE POLICY "Admins can delete rules" ON rules
+  FOR DELETE USING (is_admin());

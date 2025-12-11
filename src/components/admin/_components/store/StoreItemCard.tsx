@@ -94,11 +94,25 @@ export function StoreItemCard({ item, onEdit, onDelete, isPending, isDeleting }:
           </div>
         </div>
       </div>
-      <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={() => onEdit(item)} disabled={isPending || isDeleting}>
+      <div className="flex gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onEdit(item)}
+          disabled={isPending || isDeleting}
+          className="h-8 w-8"
+          title="Edit item"
+        >
           <Edit className="h-4 w-4" />
         </Button>
-        <Button size="sm" variant="destructive" onClick={() => onDelete(item)} disabled={isPending || isDeleting}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onDelete(item)}
+          disabled={isPending || isDeleting}
+          className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+          title="Delete item"
+        >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>

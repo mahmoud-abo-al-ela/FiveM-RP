@@ -42,25 +42,27 @@ export function AdminCard({ admin, onChangePassword, onDelete }: AdminCardProps)
           </div>
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-1">
         <Button
-          size="sm"
-          variant="outline"
+          variant="ghost"
+          size="icon"
           onClick={() => onChangePassword(admin)}
+          className="h-8 w-8"
           title="Change password"
         >
           <Key className="h-4 w-4" />
         </Button>
         <Button
-          size="sm"
-          variant="destructive"
+          variant="ghost"
+          size="icon"
           onClick={() => {
             if (confirm(`Are you sure you want to delete admin "${admin.username}"?`)) {
               onDelete(admin);
             }
           }}
           disabled={isProtected}
-          title={isProtected ? "Cannot delete the admin account" : ""}
+          className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+          title={isProtected ? "Cannot delete the admin account" : "Delete admin"}
         >
           <Trash2 className="h-4 w-4" />
         </Button>

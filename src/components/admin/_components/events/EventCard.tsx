@@ -46,21 +46,23 @@ export function EventCard({ event, isPending, isDeleting, onEdit, onDelete }: Ev
           <div className="text-sm mt-2 line-clamp-2">{event.description}</div>
         )}
       </div>
-      <div className="flex gap-2 flex-shrink-0">
+      <div className="flex gap-1 flex-shrink-0">
         <Button
-          size="sm"
-          variant="outline"
+          variant="ghost"
+          size="icon"
           onClick={() => onEdit(event)}
           disabled={isPending || isDeleting}
+          className="h-8 w-8"
           title="Edit event"
         >
           <Edit className="h-4 w-4" />
         </Button>
         <Button
-          size="sm"
-          variant="destructive"
+          variant="ghost"
+          size="icon"
           onClick={() => onDelete(event)}
           disabled={isPending || isDeleting}
+          className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
           title="Delete event"
         >
           <Trash2 className="h-4 w-4" />

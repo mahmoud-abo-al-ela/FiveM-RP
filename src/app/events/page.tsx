@@ -2,18 +2,13 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Calendar,
   Clock,
-  Users,
-  Plus,
   Search,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth/AuthProvider";
 import { format } from "date-fns";
 import { useState } from "react";
 import { DataPagination } from "@/components/ui/data-pagination";
@@ -21,7 +16,6 @@ import { DataPagination } from "@/components/ui/data-pagination";
 const ITEMS_PER_PAGE = 9;
 
 export default function EventsPage() {
-  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -70,15 +64,6 @@ export default function EventsPage() {
             <p className="text-muted-foreground text-lg">
               Join community events, races, heists, and tournaments
             </p>
-          </div>
-
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            {user && (
-              <Button className="bg-primary hover:bg-primary/90">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Event
-              </Button>
-            )}
           </div>
         </div>
 

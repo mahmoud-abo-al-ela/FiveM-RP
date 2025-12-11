@@ -1,59 +1,63 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldAlert, HeartHandshake, Skull } from "lucide-react";
+import { Loader2, Folder } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+
+interface RuleCategory {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  color: string;
+  description: string;
+  display_order: number;
+  visible: boolean;
+}
+
+interface Rule {
+  id: number;
+  category_id: number;
+  title: string;
+  description: string;
+  display_order: number;
+  visible: boolean;
+}
 
 export default function Rules() {
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<RuleCategory[]>({
+    queryKey: ["public-rule-categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/rules/categories");
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      return res.json();
+    },
+  });
 
-  const rules = {
-    general: [
-      {
-        title: "Respect & Toxicity",
-        desc: "Zero tolerance for toxicity, racism, sexism, or harassment. Treat all players with respect.",
-      },
-      {
-        title: "Roleplay Quality",
-        desc: "Maintain character at all times. Use /me and /do commands appropriately for immersion.",
-      },
-      {
-        title: "Mic Spam",
-        desc: "Do not spam voice chat or play loud music in public areas without RP context.",
-      },
-    ],
-    gameplay: [
-      {
-        title: "RDM (Random Death Match)",
-        desc: "Killing another player without valid roleplay initiation or reason is strictly prohibited.",
-      },
-      {
-        title: "VDM (Vehicle Death Match)",
-        desc: "Using a vehicle as a weapon to kill or injure players without valid RP reason is not allowed.",
-      },
-      {
-        title: "Metagaming",
-        desc: "Using outside information (Discord, streams) in-game is banned. Keep IC and OOC separate.",
-      },
-      {
-        title: "New Life Rule (NLR)",
-        desc: "If you are downed and respawn at the hospital, you forget the events leading to your death.",
-      },
-    ],
-    criminal: [
-      {
-        title: "Gang Limits",
-        desc: "Maximum 6 members involved in a hostile situation or robbery.",
-      },
-      {
-        title: "Cop Baiting",
-        desc: "Intentionally provoking police for a chase or gunfight without reason is prohibited.",
-      },
-      {
-        title: "Hostage Taking",
-        desc: "Fake hostages are not allowed. You must have a valid reason to take a hostage.",
-      },
-    ],
+  const { data: rules = [], isLoading: rulesLoading } = useQuery<Rule[]>({
+    queryKey: ["public-rules"],
+    queryFn: async () => {
+      const res = await fetch("/api/rules");
+      if (!res.ok) throw new Error("Failed to fetch rules");
+      return res.json();
+    },
+  });
+
+  const isLoading = categoriesLoading || rulesLoading;
+
+  // Filter visible categories and sort by display_order
+  const visibleCategories = categories
+    .filter((cat) => cat.visible)
+    .sort((a, b) => a.display_order - b.display_order);
+
+  // Get visible rules for a category
+  const getCategoryRules = (categoryId: number) => {
+    return rules
+      .filter((rule) => rule.category_id === categoryId && rule.visible)
+      .sort((a, b) => a.display_order - b.display_order);
   };
 
   return (
@@ -72,58 +76,51 @@ export default function Rules() {
         </p>
       </motion.div>
 
-      <Tabs defaultValue="gameplay" className="max-w-4xl mx-auto">
-          <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-white/10 p-1 mb-8">
-            <TabsTrigger
-              value="general"
-              className="data-[state=active]:bg-primary data-[state=active]:text-white font-display uppercase tracking-wider"
-            >
-              General
-            </TabsTrigger>
-            <TabsTrigger
-              value="gameplay"
-              className="data-[state=active]:bg-secondary data-[state=active]:text-black font-display uppercase tracking-wider"
-            >
-              Gameplay
-            </TabsTrigger>
-            <TabsTrigger
-              value="criminal"
-              className="data-[state=active]:bg-destructive data-[state=active]:text-white font-display uppercase tracking-wider"
-            >
-              Criminal
-            </TabsTrigger>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : visibleCategories.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No rules available at this time.</p>
+        </div>
+      ) : (
+        <Tabs defaultValue={visibleCategories[0]?.slug} className="max-w-4xl mx-auto">
+          <TabsList 
+            className="grid w-full bg-black/40 border border-white/10 p-1 mb-8"
+            style={{ gridTemplateColumns: `repeat(${visibleCategories.length}, minmax(0, 1fr))` }}
+          >
+            {visibleCategories.map((category) => (
+              <TabsTrigger
+                key={category.id}
+                value={category.slug}
+                className="font-display uppercase tracking-wider data-[state=active]:text-white transition-colors"
+              >
+                {category.name}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <TabsContent value="general">
-            <RuleSection
-              icon={HeartHandshake}
-              title="Community Standards"
-              items={rules.general}
-              color="text-primary"
-            />
-          </TabsContent>
-          <TabsContent value="gameplay">
-            <RuleSection
-              icon={ShieldAlert}
-              title="Core Mechanics"
-              items={rules.gameplay}
-              color="text-secondary"
-            />
-          </TabsContent>
-          <TabsContent value="criminal">
-            <RuleSection
-              icon={Skull}
-              title="Criminal Activity"
-              items={rules.criminal}
-              color="text-destructive"
-            />
-          </TabsContent>
+          {visibleCategories.map((category) => (
+            <TabsContent key={category.id} value={category.slug}>
+              <RuleSection
+                category={category}
+                items={getCategoryRules(category.id)}
+              />
+            </TabsContent>
+          ))}
         </Tabs>
+      )}
     </div>
   );
 }
 
-function RuleSection({ icon: Icon, title, items, color }: any) {
+function RuleSection({ category, items }: { category: RuleCategory; items: Rule[] }) {
+  // Get the icon component dynamically
+  const IconComponent = category.icon && (LucideIcons as any)[category.icon] 
+    ? (LucideIcons as any)[category.icon] 
+    : Folder;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -132,28 +129,41 @@ function RuleSection({ icon: Icon, title, items, color }: any) {
       className="space-y-4"
     >
       <div className="flex items-center gap-3 mb-6">
-        <Icon className={`h-8 w-8 ${color}`} />
-        <h2 className="text-2xl font-display uppercase">{title}</h2>
+        <IconComponent className="h-8 w-8" style={{ color: category.color }} />
+        <div>
+          <h2 className="text-2xl font-display uppercase">{category.name}</h2>
+          {category.description && (
+            <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-4">
-        {items.map((rule: any, i: number) => (
-          <Card
-            key={i}
-            className="bg-card/50 border-white/5 hover:border-white/20 transition-colors"
-          >
-            <CardHeader>
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <span className={`${color} opacity-80`}>§{i + 1}.0</span>
-                {rule.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{rule.desc}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {items.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No rules in this category yet.
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {items.map((rule, i) => (
+            <Card
+              key={rule.id}
+              className="bg-card/50 border-white/5 hover:border-white/20 transition-colors"
+            >
+              <CardHeader>
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <span style={{ color: category.color, opacity: 0.8 }}>§{i + 1}.0</span>
+                  {rule.title}
+                </CardTitle>
+              </CardHeader>
+              {rule.description && (
+                <CardContent>
+                  <p className="text-muted-foreground">{rule.description}</p>
+                </CardContent>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
