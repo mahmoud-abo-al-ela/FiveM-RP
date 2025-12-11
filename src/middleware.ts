@@ -19,6 +19,7 @@ export async function middleware(request: NextRequest) {
     "/api/auth/sync-user",
     "/api/auth/check-profile",
     "/api/auth/callback",
+    "/api/discord/interactions", // Discord webhook endpoint (no auth needed)
   ];
 
   // Skip middleware for public API routes and static files
@@ -38,7 +39,7 @@ export async function middleware(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
