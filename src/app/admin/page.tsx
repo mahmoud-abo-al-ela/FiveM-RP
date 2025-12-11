@@ -26,6 +26,8 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds
+    refetchIntervalInBackground: true, // Continue polling even when tab is not focused
   });
 
   useEffect(() => {

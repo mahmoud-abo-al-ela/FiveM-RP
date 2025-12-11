@@ -36,6 +36,8 @@ export function ActivationQueue() {
       if (!res.ok) throw new Error("Failed to fetch pending activations");
       return res.json();
     },
+    refetchInterval: 3000, // Poll every 3 seconds for faster updates
+    refetchIntervalInBackground: true, // Continue polling even when tab is not focused
   });
 
   const openDiscordChannel = () => {
