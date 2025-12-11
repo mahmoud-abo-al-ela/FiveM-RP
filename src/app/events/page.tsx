@@ -8,23 +8,14 @@ import { Input } from "@/components/ui/input";
 import {
   Calendar,
   Clock,
-  MapPin,
   Users,
   Plus,
   Search,
-  Filter,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { format } from "date-fns";
 import { useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DataPagination } from "@/components/ui/data-pagination";
 
 const ITEMS_PER_PAGE = 9;
@@ -32,7 +23,6 @@ const ITEMS_PER_PAGE = 9;
 export default function EventsPage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: events = [], isLoading } = useQuery({
@@ -44,27 +34,11 @@ export default function EventsPage() {
     },
   });
 
-  const getEventTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      race: "bg-red-500/20 text-red-400 border-red-500/50",
-      heist: "bg-purple-500/20 text-purple-400 border-purple-500/50",
-      community: "bg-blue-500/20 text-blue-400 border-blue-500/50",
-      tournament: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50",
-    };
-    return (
-      colors[type.toLowerCase()] ||
-      "bg-gray-500/20 text-gray-400 border-gray-500/50"
-    );
-  };
-
   const filteredEvents = events.filter((event: any) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType =
-      selectedType === "all" ||
-      event.event_type.toLowerCase() === selectedType.toLowerCase();
-    return matchesSearch && matchesType;
+      (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
@@ -74,14 +48,9 @@ export default function EventsPage() {
     startIndex + ITEMS_PER_PAGE
   );
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when search changes
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setCurrentPage(1);
-  };
-
-  const handleTypeChange = (value: string) => {
-    setSelectedType(value);
     setCurrentPage(1);
   };
 
@@ -129,23 +98,6 @@ export default function EventsPage() {
               onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
-          <div className="w-full md:w-48">
-            <Select value={selectedType} onValueChange={handleTypeChange}>
-              <SelectTrigger className="bg-black/20 border-white/10">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="Event Type" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="race">Race</SelectItem>
-                <SelectItem value="heist">Heist</SelectItem>
-                <SelectItem value="community">Community</SelectItem>
-                <SelectItem value="tournament">Tournament</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </motion.div>
 
         {/* Events Grid */}
@@ -179,16 +131,15 @@ export default function EventsPage() {
                 <Card className="bg-card/30 border-white/5 hover:border-primary/30 transition-all group h-full flex flex-col overflow-hidden hover:shadow-lg hover:shadow-primary/5">
                   {/* Event Image/Banner */}
                   <div className="relative h-48 bg-gradient-to-br from-primary/20 to-secondary/20 overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-                    <div className="absolute top-4 right-4 z-10">
-                      <Badge
-                        className={`${getEventTypeColor(
-                          event.event_type
-                        )} border backdrop-blur-md`}
-                      >
-                        {event.event_type}
-                      </Badge>
-                    </div>
+                    {event.image_url ? (
+                      <img 
+                        src={event.image_url} 
+                        alt={event.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                    )}
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                       <h3 className="text-2xl font-display font-bold text-white drop-shadow-lg truncate">
                         {event.title}
@@ -197,47 +148,24 @@ export default function EventsPage() {
                   </div>
 
                   <CardContent className="flex-1 p-6 flex flex-col">
-                    <p className="text-muted-foreground text-sm mb-6 line-clamp-2 flex-1">
+                    <p className="text-muted-foreground text-sm h-[60px] line-clamp-3 mb-4">
                       {event.description}
                     </p>
 
-                    <div className="space-y-3 mb-6">
+                    <div className="flex justify-between items-center mt-auto">
                       <div className="flex items-center gap-3 text-sm text-gray-300">
                         <div className="p-2 rounded-full bg-primary/10 text-primary">
                           <Calendar className="h-4 w-4" />
                         </div>
-                        <span>{format(new Date(event.start_time), "PPP")}</span>
+                        <span>{format(new Date(event.event_date), "PPP")}</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-300">
                         <div className="p-2 rounded-full bg-primary/10 text-primary">
                           <Clock className="h-4 w-4" />
                         </div>
-                        <span>{format(new Date(event.start_time), "p")}</span>
-                      </div>
-                      {event.location && (
-                        <div className="flex items-center gap-3 text-sm text-gray-300">
-                          <div className="p-2 rounded-full bg-primary/10 text-primary">
-                            <MapPin className="h-4 w-4" />
-                          </div>
-                          <span>{event.location}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-3 text-sm text-gray-300">
-                        <div className="p-2 rounded-full bg-primary/10 text-primary">
-                          <Users className="h-4 w-4" />
-                        </div>
-                        <span>
-                          {event.current_participants || 0}
-                          {event.max_participants &&
-                            ` / ${event.max_participants}`}{" "}
-                          participants
-                        </span>
+                        <span>{format(new Date(event.event_date), "p")}</span>
                       </div>
                     </div>
-
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
-                      {user ? "Register Now" : "Sign in to Register"}
-                    </Button>
                   </CardContent>
                 </Card>
               </motion.div>

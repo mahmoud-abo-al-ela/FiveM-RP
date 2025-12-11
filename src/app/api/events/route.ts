@@ -12,8 +12,8 @@ export async function GET() {
         created_by:users!events_created_by_fkey(discord_username, discord_avatar),
         participants:event_participants(count)
       `)
-      .gte("end_time", new Date().toISOString())
-      .order("start_time", { ascending: true });
+      .gte("expiration_date", new Date().toISOString())
+      .order("event_date", { ascending: true });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -35,11 +35,9 @@ export async function POST(request: Request) {
       .insert({
         title: body.title,
         description: body.description,
-        event_type: body.event_type,
-        start_time: body.start_time,
-        end_time: body.end_time,
-        location: body.location,
-        max_participants: body.max_participants,
+        image_url: body.image_url,
+        event_date: body.event_date,
+        expiration_date: body.expiration_date,
         created_by: body.created_by,
       })
       .select()

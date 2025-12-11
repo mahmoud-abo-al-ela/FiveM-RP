@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,28 +20,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File size must be less than 5MB" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const supabase = createServiceRoleClient();
 
     // Generate unique filename
     const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const filename = `${timestamp}-${originalName}`;
+    const fileExt = file.name.split(".").pop();
+    const originalName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9-]/g, "_");
+    const filename = `${timestamp}-${originalName}.${fileExt}`;
 
-    // Ensure upload directory exists
-    const uploadDir = join(process.cwd(), "public", "uploads", "store");
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
+    // Convert file to buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from("uploads")
+      .upload(filename, buffer, {
+        contentType: file.type,
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) {
+      console.error("Supabase upload error:", error);
+      return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
     }
 
-    // Save file
-    const filepath = join(uploadDir, filename);
-    await writeFile(filepath, buffer);
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from("uploads")
+      .getPublicUrl(data.path);
 
-    // Return public URL
-    const url = `/uploads/store/${filename}`;
-
-    return NextResponse.json({ url, filename }, { status: 200 });
+    return NextResponse.json({ url: publicUrl, filename: data.path }, { status: 200 });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });

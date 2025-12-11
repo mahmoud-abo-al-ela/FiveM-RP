@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useState } from "react";
 import { EventsEmptyState } from "./empty-states";
 import { EventCard, EventDialog, DeleteEventDialog, useEventMutations } from "./_components/events";
@@ -29,6 +30,8 @@ export function EventsManagement() {
   const [pendingEventId] = useState<number | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["admin-events"],
@@ -41,24 +44,15 @@ export function EventsManagement() {
 
   const { createMutation, updateMutation, deleteMutation } = useEventMutations();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, imageFile: File | null) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
-    let imageUrl = formData.get("image_url") as string;
-    
-    if (imageFile) {
-      const reader = new FileReader();
-      imageUrl = await new Promise((resolve) => {
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(imageFile);
-      });
-    }
     
     const event = {
       id: editingEvent?.id,
       title: formData.get("title") as string,
       description: formData.get("description") as string,
-      image_url: imageUrl,
+      image_url: uploadedImage || null,
       event_date: formData.get("event_date") as string,
       expiration_date: formData.get("expiration_date") as string,
     };
@@ -73,11 +67,60 @@ export function EventsManagement() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      setUploadedImage(data.url);
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      toast.error("Failed to upload image");
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setUploadedImage(null);
+  };
+
   const handleDeleteConfirm = (event: Event) => {
     setDeleteDialogOpen(false);
     setEventToDelete(null);
     setDeletingEventId(event.id);
     deleteMutation.mutate(event.id);
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setUploadedImage(event.image_url);
+    setIsDialogOpen(true);
   };
 
   return (
@@ -90,6 +133,7 @@ export function EventsManagement() {
           </div>
           <Button onClick={() => {
             setEditingEvent(null);
+            setUploadedImage(null);
             setIsDialogOpen(true);
           }}>
             <Plus className="h-4 w-4 mr-2" />
@@ -105,6 +149,7 @@ export function EventsManagement() {
         ) : events.length === 0 ? (
           <EventsEmptyState onCreateClick={() => {
             setEditingEvent(null);
+            setUploadedImage(null);
             setIsDialogOpen(true);
           }} />
         ) : (
@@ -118,10 +163,7 @@ export function EventsManagement() {
                     event={event}
                     isPending={pendingEventId === event.id}
                     isDeleting={deletingEventId === event.id}
-                    onEdit={(event) => {
-                      setEditingEvent(event);
-                      setIsDialogOpen(true);
-                    }}
+                    onEdit={handleEditEvent}
                     onDelete={(event) => {
                       setEventToDelete(event);
                       setDeleteDialogOpen(true);
@@ -143,12 +185,18 @@ export function EventsManagement() {
           open={isDialogOpen}
           onOpenChange={(open) => {
             setIsDialogOpen(open);
-            if (!open) setEditingEvent(null);
+            if (!open) {
+              setEditingEvent(null);
+              setUploadedImage(null);
+            }
           }}
           editingEvent={editingEvent}
+          uploadedImage={uploadedImage}
+          isUploading={isUploading}
+          onImageUpload={handleImageUpload}
+          onRemoveImage={handleRemoveImage}
           onSubmit={handleSubmit}
-          isCreating={createMutation.isPending}
-          isUpdating={updateMutation.isPending}
+          isSubmitting={createMutation.isPending || updateMutation.isPending}
         />
 
         <DeleteEventDialog

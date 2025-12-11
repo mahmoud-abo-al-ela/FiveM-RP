@@ -22,10 +22,7 @@ interface User {
   role: string;
   activated: boolean;
   level: number;
-  playtime_hours: number;
-  discord_username: string | null;
   discord_avatar: string | null;
-  created_at: string;
 }
 
 export function UsersManagement() {
@@ -133,46 +130,11 @@ export function UsersManagement() {
                       {user.in_game_name}
                     </div>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                        {user.role}
-                      </Badge>
-                      <Badge variant={user.activated ? "default" : "destructive"}>
-                        {user.activated ? "Active" : "Inactive"}
-                      </Badge>
                       <Badge variant="outline">
                         Level {user.level}
                       </Badge>
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Select
-                    value={user.role}
-                    onValueChange={(role) =>
-                      updateRoleMutation.mutate({ userId: user.id, role })
-                    }
-                  >
-                    <SelectTrigger className="w-[130px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="moderator">Moderator</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    size="sm"
-                    variant={user.activated ? "destructive" : "default"}
-                    onClick={() =>
-                      toggleActivationMutation.mutate({
-                        userId: user.id,
-                        activated: !user.activated,
-                      })
-                    }
-                  >
-                    {user.activated ? <Ban className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-                  </Button>
                 </div>
               </div>
                 ))}

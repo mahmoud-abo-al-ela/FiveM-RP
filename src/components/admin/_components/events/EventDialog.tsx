@@ -3,8 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Plus, Edit, Loader2, X, Image as ImageIcon } from "lucide-react";
+import { useRef } from "react";
 
 interface Event {
   id: number;
@@ -20,53 +20,31 @@ interface EventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingEvent: Event | null;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>, imageFile: File | null) => void;
-  isCreating: boolean;
-  isUpdating: boolean;
+  uploadedImage: string | null;
+  isUploading: boolean;
+  onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveImage: () => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  isSubmitting: boolean;
 }
 
 export function EventDialog({ 
   open, 
   onOpenChange, 
-  editingEvent, 
-  onSubmit, 
-  isCreating, 
-  isUpdating 
+  editingEvent,
+  uploadedImage,
+  isUploading,
+  onImageUpload,
+  onRemoveImage,
+  onSubmit,
+  isSubmitting
 }: EventDialogProps) {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onSubmit(e, imageFile);
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setImageFile(null);
-      setImagePreview(null);
-    }
-    onOpenChange(open);
-  };
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>
               {editingEvent ? "Edit Event" : "Add New Event"}
@@ -98,34 +76,28 @@ export function EventDialog({
               />
             </div>
             <div>
-              <Label htmlFor="image_url">Image URL</Label>
-              <Input
-                id="image_url"
-                name="image_url"
-                defaultValue={editingEvent?.image_url || ""}
-                placeholder="https://example.com/event-image.jpg"
-                disabled={!!imageFile}
-              />
-              <div className="text-sm text-muted-foreground mt-1">Or upload a file below</div>
-            </div>
-            <div>
-              <Label htmlFor="image_file">Upload Image</Label>
-              <Input
-                id="image_file"
-                name="image_file"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-              />
-              {(imagePreview || editingEvent?.image_url) && (
-                <div className="mt-2">
-                  <img
-                    src={imagePreview || editingEvent?.image_url || ""}
-                    alt="Preview"
-                    className="w-full max-w-xs h-32 object-cover rounded-lg"
-                  />
-                </div>
-              )}
+              <Label>Event Image</Label>
+              <div className="space-y-2">
+                {uploadedImage ? (
+                  <div className="relative border rounded-lg p-4 bg-muted/30">
+                    <img src={uploadedImage} alt="Preview" className="w-full h-40 object-cover rounded-lg mb-2" />
+                    <Button type="button" variant="destructive" size="sm" onClick={onRemoveImage} className="w-full">
+                      <X className="h-4 w-4 mr-2" /> Remove Image
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={onImageUpload} className="hidden" id="event-image-upload" />
+                    <label htmlFor="event-image-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center gap-2">
+                        {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : <ImageIcon className="h-8 w-8 text-muted-foreground" />}
+                        <div className="text-sm text-muted-foreground">{isUploading ? "Uploading..." : "Click to upload event image"}</div>
+                        <div className="text-xs text-muted-foreground">PNG, JPG up to 5MB</div>
+                      </div>
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -154,24 +126,19 @@ export function EventDialog({
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => handleOpenChange(false)}
-              disabled={isCreating || isUpdating}
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               type="submit"
-              disabled={isCreating || isUpdating}
+              disabled={isSubmitting}
             >
-              {isCreating ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : isUpdating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
+                  {editingEvent ? "Updating..." : "Creating..."}
                 </>
               ) : (
                 <>

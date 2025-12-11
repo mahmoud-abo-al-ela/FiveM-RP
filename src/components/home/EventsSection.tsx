@@ -97,17 +97,12 @@ export function EventsSection({ events }: EventsSectionProps) {
                         </motion.div>
                       )}
                       <div className="flex-1">
-                        <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
-                          {event.title}
+                        <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors flex justify-between">
+                          {event.title} <span className="text-muted-foreground">{new Date(event.event_date).toLocaleDateString()}</span>
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                           {event.description}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>{new Date(event.event_date).toLocaleDateString()}</span>
-                          <span>•</span>
-                          <span>{event.current_participants || 0} participants</span>
-                        </div>
                       </div>
                     </div>
                   </CardContent>
