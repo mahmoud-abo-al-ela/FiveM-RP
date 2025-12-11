@@ -17,7 +17,7 @@ export async function GET(request: Request) {
           discord_username,
           discord_avatar
         ),
-        profile:user_profiles!leaderboard_user_id_fkey(
+        profile:users!leaderboard_user_id_fkey(
           display_name,
           level
         )

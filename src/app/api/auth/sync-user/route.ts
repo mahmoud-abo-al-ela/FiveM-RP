@@ -40,7 +40,6 @@ export async function POST() {
       );
 
     if (upsertError) {
-      console.error("Error upserting user:", upsertError);
       return NextResponse.json(
         { error: "Failed to sync user data" },
         { status: 500 }
@@ -49,14 +48,14 @@ export async function POST() {
 
     // Check if user profile exists, create if not
     const { data: existingProfile } = await supabase
-      .from("user_profiles")
+      .from("users")
       .select("id")
       .eq("id", user.id)
       .single();
 
     if (!existingProfile) {
       const { error: profileError } = await supabase
-        .from("user_profiles")
+        .from("users")
         .insert({
           id: user.id,
           display_name: discordUsername || email?.split("@")[0] || "User",
@@ -67,14 +66,12 @@ export async function POST() {
         });
 
       if (profileError) {
-        console.error("Error creating profile:", profileError);
         // Don't fail the request if profile creation fails
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Sync user error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,7 +1,7 @@
 -- Extended Supabase Database Schema with Discord Auth Support
 -- Run this in your Supabase SQL Editor to create/update all tables
 
--- Users table (extended for Discord OAuth)
+-- Users table (merged with profiles, extended for Discord OAuth)
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT UNIQUE,
@@ -12,13 +12,6 @@ CREATE TABLE IF NOT EXISTS users (
   discord_avatar TEXT,
   email TEXT,
   role TEXT DEFAULT 'user',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  last_login TIMESTAMPTZ DEFAULT NOW()
-);
-
--- User profiles table
-CREATE TABLE IF NOT EXISTS user_profiles (
-  id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   display_name TEXT,
   bio TEXT,
   in_game_name TEXT,
@@ -26,7 +19,10 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   level INTEGER DEFAULT 1,
   experience_points INTEGER DEFAULT 0,
   reputation_score INTEGER DEFAULT 0,
+  activated BOOLEAN DEFAULT false,
+  rejected_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -95,31 +91,14 @@ CREATE TABLE IF NOT EXISTS server_status (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- News articles table
-CREATE TABLE IF NOT EXISTS news_articles (
-  id SERIAL PRIMARY KEY,
-  author_id UUID REFERENCES users(id),
-  title TEXT NOT NULL,
-  category TEXT NOT NULL,
-  preview TEXT NOT NULL,
-  content TEXT,
-  image_url TEXT,
-  views INTEGER DEFAULT 0,
-  published BOOLEAN DEFAULT true,
-  published_at TIMESTAMPTZ DEFAULT NOW()
-);
-
 -- Events table
 CREATE TABLE IF NOT EXISTS events (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
-  event_type TEXT NOT NULL,
-  start_time TIMESTAMPTZ NOT NULL,
-  end_time TIMESTAMPTZ,
-  location TEXT,
-  max_participants INTEGER,
-  current_participants INTEGER DEFAULT 0,
+  image_url TEXT,
+  event_date TIMESTAMPTZ NOT NULL,
+  expiration_date TIMESTAMPTZ NOT NULL,
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -160,6 +139,10 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_activated ON users(activated);
+CREATE INDEX IF NOT EXISTS idx_users_rejected_at ON users(rejected_at);
+CREATE INDEX IF NOT EXISTS idx_users_display_name ON users(display_name);
+CREATE INDEX IF NOT EXISTS idx_users_in_game_name ON users(in_game_name);
 CREATE INDEX IF NOT EXISTS idx_applications_user_id ON applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications(submitted_at DESC);
@@ -167,21 +150,19 @@ CREATE INDEX IF NOT EXISTS idx_store_items_category ON store_items(category);
 CREATE INDEX IF NOT EXISTS idx_store_items_available ON store_items(available);
 CREATE INDEX IF NOT EXISTS idx_shopping_cart_user_id ON shopping_cart(user_id);
 CREATE INDEX IF NOT EXISTS idx_purchases_user_id ON purchases(user_id);
-CREATE INDEX IF NOT EXISTS idx_news_articles_published_at ON news_articles(published_at DESC);
-CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
+CREATE INDEX IF NOT EXISTS idx_events_event_date ON events(event_date);
+CREATE INDEX IF NOT EXISTS idx_events_expiration_date ON events(expiration_date);
 CREATE INDEX IF NOT EXISTS idx_leaderboard_category_rank ON leaderboard(category, rank);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, read);
 CREATE INDEX IF NOT EXISTS idx_server_status_updated_at ON server_status(updated_at DESC);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE store_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shopping_cart ENABLE ROW LEVEL SECURITY;
 ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE server_status ENABLE ROW LEVEL SECURITY;
-ALTER TABLE news_articles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
@@ -189,21 +170,14 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 
--- Users: Can view own profile, admins can view all
-CREATE POLICY "Users can view own profile" ON users
-  FOR SELECT USING (auth.uid() = id OR auth.role() = 'authenticated');
+-- Users: Public read, own update
+CREATE POLICY "Users are publicly readable" ON users
+  FOR SELECT USING (true);
 
 CREATE POLICY "Users can update own profile" ON users
   FOR UPDATE USING (auth.uid() = id);
 
--- User profiles: Public read, own update
-CREATE POLICY "Profiles are publicly readable" ON user_profiles
-  FOR SELECT USING (true);
-
-CREATE POLICY "Users can update own profile" ON user_profiles
-  FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert own profile" ON user_profiles
+CREATE POLICY "Users can insert own profile" ON users
   FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Applications: Anyone can insert, users can view own, admins can view all
@@ -242,13 +216,6 @@ CREATE POLICY "Server status is publicly readable" ON server_status
   FOR SELECT USING (true);
 
 CREATE POLICY "Authenticated users can update server status" ON server_status
-  FOR ALL USING (auth.role() = 'authenticated');
-
--- News articles: Public read, authenticated write
-CREATE POLICY "News articles are publicly readable" ON news_articles
-  FOR SELECT USING (published = true OR auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can manage news articles" ON news_articles
   FOR ALL USING (auth.role() = 'authenticated');
 
 -- Events: Public read, authenticated write

@@ -25,7 +25,6 @@ export async function getDiscordClient() {
   // Wait for the client to be ready
   await new Promise<void>((resolve) => {
     discordClient!.once('ready', () => {
-      console.log(`Discord bot logged in as ${discordClient!.user?.tag}`);
       resolve();
     });
   });
@@ -45,7 +44,6 @@ export async function sendDiscordMessage(channelId: string, message: string) {
     await (channel as TextChannel).send(message);
     return { success: true };
   } catch (error) {
-    console.error('Failed to send Discord message:', error);
     throw error;
   }
 }
@@ -58,7 +56,6 @@ export async function sendActivationSuccessMessage(
   const channelId = process.env.DISCORD_CHANNEL_ID;
   
   if (!channelId) {
-    console.warn('DISCORD_CHANNEL_ID is not configured, skipping Discord notification');
     return { success: false, reason: 'Channel ID not configured' };
   }
 
@@ -72,7 +69,6 @@ export async function sendActivationSuccessMessage(
     await sendDiscordMessage(channelId, message);
     return { success: true };
   } catch (error) {
-    console.error('Failed to send activation message:', error);
     return { success: false, error };
   }
 }

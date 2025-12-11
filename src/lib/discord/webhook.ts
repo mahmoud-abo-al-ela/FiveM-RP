@@ -48,12 +48,12 @@ export async function sendDiscordWebhook(
     const data = await response.json();
     return { success: true, id: data.id };
   } catch (error) {
-    console.error("Failed to send Discord webhook:", error);
     return { success: false, error };
   }
 }
 
 // Send activation request to staff with buttons
+// NOTE: This uses the Discord Bot API instead of webhooks because webhooks cannot send interactive buttons
 export async function sendActivationRequestToStaff(
   characterName: string,
   userId: string,
@@ -61,10 +61,15 @@ export async function sendActivationRequestToStaff(
   discordUsername: string,
   activationData: { age: number; steamOrEpicLink: string; rpExperience: string }
 ) {
-  const webhookUrl = process.env.DISCORD_STAFF_WEBHOOK_URL;
-  if (!webhookUrl) {
-    console.warn("Staff webhook URL not configured");
-    return { success: false, reason: "Webhook URL not configured" };
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  const channelId = process.env.DISCORD_STAFF_CHANNEL_ID;
+  
+  if (!botToken) {
+    return { success: false, reason: "Bot token not configured" };
+  }
+  
+  if (!channelId) {
+    return { success: false, reason: "Channel ID not configured" };
   }
 
   const embed: DiscordEmbed = {
@@ -91,16 +96,40 @@ export async function sendActivationRequestToStaff(
   };
 
   const components: { type: 1; components: DiscordButton[] }[] = [
-  {
-    type: 1, // literal 1, not number
-    components: [
-      { type: 2, style: 3, label: "Approve", custom_id: `approve_${userId}` },
-      { type: 2, style: 4, label: "Reject", custom_id: `reject_${userId}` },
-    ],
-  },
-];
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 3, label: "Approve", custom_id: `approve_${userId}` },
+        { type: 2, style: 4, label: "Reject", custom_id: `reject_${userId}` },
+      ],
+    },
+  ];
 
-  return await sendDiscordWebhook(webhookUrl, `<@${discordUserId}>`, [embed], components);
+  try {
+    // Use Discord Bot API to send message with buttons
+    const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: `<@${discordUserId}>`,
+        embeds: [embed],
+        components: components,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Discord API failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { success: true, id: data.id };
+  } catch (error) {
+    return { success: false, error };
+  }
 }
 
 // Send activation success webhook
@@ -134,28 +163,39 @@ export async function sendActivationSuccessWebhook(
 // Send DM to a user
 export async function sendDirectMessage(userId: string, message: string) {
   const botToken = process.env.DISCORD_BOT_TOKEN;
-  if (!botToken) throw new Error("DISCORD_BOT_TOKEN is not configured");
+  if (!botToken) {
+    throw new Error("DISCORD_BOT_TOKEN is not configured");
+  }
 
   try {
+    // Step 1: Create DM channel
     const dmChannelRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
       method: "POST",
       headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({ recipient_id: userId }),
     });
 
-    if (!dmChannelRes.ok) throw new Error(`Failed to create DM channel: ${dmChannelRes.statusText}`);
+    if (!dmChannelRes.ok) {
+      const errorBody = await dmChannelRes.text();
+      throw new Error(`Failed to create DM channel: ${dmChannelRes.statusText} - ${errorBody}`);
+    }
+    
     const dmChannel = await dmChannelRes.json();
 
+    // Step 2: Send message to DM channel
     const messageRes = await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
       method: "POST",
       headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({ content: message }),
     });
 
-    if (!messageRes.ok) throw new Error(`Failed to send DM: ${messageRes.statusText}`);
+    if (!messageRes.ok) {
+      const errorBody = await messageRes.text();
+      throw new Error(`Failed to send DM: ${messageRes.statusText} - ${errorBody}`);
+    }
+    
     return { success: true };
   } catch (error) {
-    console.error("Failed to send Discord DM:", error);
     return { success: false, error };
   }
 }
@@ -169,9 +209,23 @@ export async function sendActivationDM(discordUserId: string, characterName: str
 }
 
 export async function sendApprovalDM(discordUserId: string, characterName: string) {
+  const serverIp = process.env.FIVEM_SERVER_IP || "Your FiveM Server";
+  
   return await sendDirectMessage(
     discordUserId,
-    `🎉 **Congratulations!**\n\nYour activation for **${characterName}** has been approved!\n\nYou may now join the FiveM server. 🚀`
+    `🎉 **Congratulations, ${characterName}!**\n\n` +
+    `✅ Your activation request has been **APPROVED** by our staff team!\n\n` +
+    `**🎮 Next Steps:**\n` +
+    `1️⃣ Open FiveM\n` +
+    `2️⃣ Press F8 to open the console\n` +
+    `3️⃣ Type: \`connect ${serverIp}\`\n` +
+    `4️⃣ Have fun and follow the server rules!\n\n` +
+    `**📋 Important:**\n` +
+    `• Make sure to read the server rules in the Discord\n` +
+    `• Be respectful to other players\n` +
+    `• Report any issues to staff\n\n` +
+    `**Need help?** Contact our support team in the Discord server.\n\n` +
+    `Welcome to the community! 🚀`
   );
 }
 
@@ -185,7 +239,9 @@ export async function sendRejectionDM(discordUserId: string, characterName: stri
 // Assign role to user
 export async function assignDiscordRole(guildId: string, userId: string, roleId: string) {
   const botToken = process.env.DISCORD_BOT_TOKEN;
-  if (!botToken) throw new Error("DISCORD_BOT_TOKEN is not configured");
+  if (!botToken) {
+    throw new Error("DISCORD_BOT_TOKEN is not configured");
+  }
 
   try {
     const res = await fetch(
@@ -193,10 +249,13 @@ export async function assignDiscordRole(guildId: string, userId: string, roleId:
       { method: "PUT", headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" } }
     );
 
-    if (!res.ok) throw new Error(`Failed to assign role: ${res.statusText}`);
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Failed to assign role: ${res.statusText} - ${errorBody}`);
+    }
+    
     return { success: true };
   } catch (error) {
-    console.error("Failed to assign Discord role:", error);
     return { success: false, error };
   }
 }

@@ -4,13 +4,19 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trophy, Medal, Award, TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Trophy, Medal, Award, TrendingUp, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataPagination } from "@/components/ui/data-pagination";
+
+const ITEMS_PER_PAGE = 20;
 
 export default function LeaderboardPage() {
   const [category, setCategory] = useState("playtime");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: leaderboard = [], isLoading } = useQuery({
     queryKey: ["leaderboard", category],
@@ -20,6 +26,32 @@ export default function LeaderboardPage() {
       return res.json();
     },
   });
+
+  const filteredLeaderboard = leaderboard.filter((entry: any) => {
+    const name =
+      entry.profile?.display_name ||
+      entry.user?.discord_username ||
+      "Unknown Player";
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const totalPages = Math.ceil(filteredLeaderboard.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLeaderboard = filteredLeaderboard.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
+  // Reset to page 1 when filters change
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategory(value);
+    setCurrentPage(1);
+  };
 
   const categories = [
     { value: "playtime", label: "Playtime", icon: TrendingUp },
@@ -32,13 +64,18 @@ export default function LeaderboardPage() {
     if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-400" />;
     if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
     if (rank === 3) return <Medal className="h-6 w-6 text-amber-600" />;
-    return <span className="text-lg font-bold text-muted-foreground">#{rank}</span>;
+    return (
+      <span className="text-lg font-bold text-muted-foreground">#{rank}</span>
+    );
   };
 
   const getRankBadgeColor = (rank: number) => {
-    if (rank === 1) return "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white";
-    if (rank === 2) return "bg-gradient-to-r from-gray-400 to-gray-500 text-white";
-    if (rank === 3) return "bg-gradient-to-r from-amber-600 to-amber-700 text-white";
+    if (rank === 1)
+      return "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white";
+    if (rank === 2)
+      return "bg-gradient-to-r from-gray-400 to-gray-500 text-white";
+    if (rank === 3)
+      return "bg-gradient-to-r from-amber-600 to-amber-700 text-white";
     return "bg-card/50";
   };
 
@@ -60,7 +97,7 @@ export default function LeaderboardPage() {
         </motion.div>
 
         {/* Category Tabs */}
-        <Tabs value={category} onValueChange={setCategory} className="mb-8">
+        <Tabs value={category} onValueChange={handleCategoryChange} className="mb-8">
           <TabsList className="grid w-full grid-cols-4 bg-card/30 border border-white/5">
             {categories.map((cat) => (
               <TabsTrigger
@@ -75,6 +112,17 @@ export default function LeaderboardPage() {
           </TabsList>
         </Tabs>
 
+        {/* Search */}
+        <div className="relative mb-8">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search player..."
+            className="pl-9 bg-card/30 border-white/5"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+        </div>
+
         {/* Leaderboard List */}
         {isLoading ? (
           <div className="space-y-4">
@@ -84,15 +132,16 @@ export default function LeaderboardPage() {
               </Card>
             ))}
           </div>
-        ) : leaderboard.length === 0 ? (
+        ) : filteredLeaderboard.length === 0 ? (
           <Card className="bg-card/30 border-white/5 p-12 text-center">
             <Trophy className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">No Data Available</h3>
-            <p className="text-muted-foreground">Leaderboard data will appear here soon!</p>
+            <h3 className="text-xl font-semibold mb-2">No Players Found</h3>
+            <p className="text-muted-foreground">Try adjusting your search.</p>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {leaderboard.map((entry: any, i: number) => (
+          <>
+            <div className="space-y-3">
+              {paginatedLeaderboard.map((entry: any, i: number) => (
               <motion.div
                 key={entry.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -100,7 +149,9 @@ export default function LeaderboardPage() {
                 transition={{ delay: i * 0.05 }}
               >
                 <Card
-                  className={`${getRankBadgeColor(entry.rank)} border-white/5 hover:border-primary/30 transition-all group`}
+                  className={`${getRankBadgeColor(
+                    entry.rank
+                  )} border-white/5 hover:border-primary/30 transition-all group`}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
@@ -117,10 +168,17 @@ export default function LeaderboardPage() {
                               ? `https://cdn.discordapp.com/avatars/${entry.user.discord_id}/${entry.user.discord_avatar}.png`
                               : undefined
                           }
-                          alt={entry.profile?.display_name || entry.user?.discord_username}
+                          alt={
+                            entry.profile?.display_name ||
+                            entry.user?.discord_username
+                          }
                         />
                         <AvatarFallback className="bg-primary text-white">
-                          {(entry.profile?.display_name || entry.user?.discord_username || "U")
+                          {(
+                            entry.profile?.display_name ||
+                            entry.user?.discord_username ||
+                            "U"
+                          )
                             .charAt(0)
                             .toUpperCase()}
                         </AvatarFallback>
@@ -129,10 +187,13 @@ export default function LeaderboardPage() {
                       {/* User Info */}
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">
-                          {entry.profile?.display_name || entry.user?.discord_username || "Unknown Player"}
+                          {entry.profile?.display_name ||
+                            entry.user?.discord_username ||
+                            "Unknown Player"}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {entry.profile?.level && `Level ${entry.profile.level}`}
+                          {entry.profile?.level &&
+                            `Level ${entry.profile.level}`}
                         </p>
                       </div>
 
@@ -159,8 +220,16 @@ export default function LeaderboardPage() {
                   </CardContent>
                 </Card>
               </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            <DataPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="mt-8"
+            />
+          </>
         )}
       </div>
     </div>

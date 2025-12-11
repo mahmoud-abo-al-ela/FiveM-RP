@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     // Get user profile with activation request data
     const { data: profile, error: profileError } = await supabase
-      .from("user_profiles")
+      .from("users")
       .select("*, activation_request_data")
       .eq("id", userId)
       .single();
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
     // Update profile to activated
     const { error: updateError } = await supabase
-      .from("user_profiles")
+      .from("users")
       .update({
         activated: true,
         activated_at: new Date().toISOString(),
@@ -72,7 +72,6 @@ export async function POST(request: Request) {
       .eq("id", userId);
 
     if (updateError) {
-      console.error("Failed to update profile:", updateError);
       return NextResponse.json(
         { error: "Failed to activate user" },
         { status: 500 }
@@ -97,12 +96,10 @@ export async function POST(request: Request) {
         try {
           await assignDiscordRole(guildId, discordId, roleId);
         } catch (roleError) {
-          console.error("Failed to assign Discord role:", roleError);
           // Don't fail the approval if role assignment fails
         }
       }
     } catch (dmError) {
-      console.error("Failed to send approval DM:", dmError);
       // Don't fail the approval if DM fails
     }
 
@@ -111,7 +108,6 @@ export async function POST(request: Request) {
       message: "User activated successfully"
     });
   } catch (error) {
-    console.error("Approval error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

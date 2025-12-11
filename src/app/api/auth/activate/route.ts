@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
     // Update or create user profile with pending activation
     const { error: profileError } = await supabase
-      .from("user_profiles")
+      .from("users")
       .upsert({
         id: user.id,
         display_name: characterName,
@@ -104,7 +104,6 @@ export async function POST(request: Request) {
       });
 
     if (profileError) {
-      console.error("Profile update error:", profileError);
       return NextResponse.json(
         { error: "Failed to update profile" },
         { status: 500 }
@@ -126,7 +125,7 @@ export async function POST(request: Request) {
     });
 
     if (userError) {
-      console.error("User update error:", userError);
+      // User update error
     }
 
     // Send activation request to staff Discord channel
@@ -144,15 +143,14 @@ export async function POST(request: Request) {
       );
 
       // Store Discord message ID for later reference
-      if (result.success && result.messageId) {
+      if (result.success && result.id) {
         await supabase
-          .from("user_profiles")
-          .update({ discord_message_id: result.messageId })
+          .from("users")
+          .update({ discord_message_id: result.id })
           .eq("id", user.id);
       }
     } catch (discordError) {
       // Don't fail the activation if Discord notification fails
-      console.error("Discord notification error:", discordError);
     }
 
     return NextResponse.json({ 
@@ -160,7 +158,6 @@ export async function POST(request: Request) {
       message: "Activation request submitted! Staff will review your request shortly."
     });
   } catch (error) {
-    console.error("Activation error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

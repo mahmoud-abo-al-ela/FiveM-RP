@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/layout/Navbar";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
+import { BackToTop } from "@/components/layout/BackToTop";
 
 export const metadata: Metadata = {
   title: "LEGACY RP - FiveM Roleplay Server",
-  description: "Experience the next generation of FiveM roleplay. Custom framework, player-driven economy, and infinite possibilities.",
+  description:
+    "Experience the next generation of FiveM roleplay. Custom framework, player-driven economy, and infinite possibilities.",
 };
 
 export default function RootLayout({
@@ -22,9 +24,9 @@ export default function RootLayout({
           <Navbar />
           <main>{children}</main>
           <Toaster />
+          <BackToTop />
         </Providers>
       </body>
     </html>
   );
 }
-

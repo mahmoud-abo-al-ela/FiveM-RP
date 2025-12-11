@@ -27,15 +27,6 @@ export interface ServerStatus {
   updated_at: string;
 }
 
-export interface NewsArticle {
-  id: number;
-  title: string;
-  category: string;
-  preview: string;
-  content: string | null;
-  published_at: string;
-}
-
 // Zod Schemas for validation
 export const insertUserSchema = z.object({
   username: z.string().min(1),
@@ -59,15 +50,7 @@ export const insertServerStatusSchema = z.object({
   ping: z.number().default(0),
 });
 
-export const insertNewsArticleSchema = z.object({
-  title: z.string().min(1),
-  category: z.string().min(1),
-  preview: z.string().min(1),
-  content: z.string().optional(),
-});
-
 // Insert Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertStoreItem = z.infer<typeof insertStoreItemSchema>;
 export type InsertServerStatus = z.infer<typeof insertServerStatusSchema>;
-export type InsertNewsArticle = z.infer<typeof insertNewsArticleSchema>;

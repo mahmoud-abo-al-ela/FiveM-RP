@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     // Get user profile with activation request data
     const { data: profile, error: profileError } = await supabase
-      .from("user_profiles")
+      .from("users")
       .select("*, activation_request_data")
       .eq("id", userId)
       .single();
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
     // Update profile to rejected
     const { error: updateError } = await supabase
-      .from("user_profiles")
+      .from("users")
       .update({
         activated: false,
         rejected_at: new Date().toISOString(),
@@ -78,7 +78,6 @@ export async function POST(request: Request) {
       .eq("id", userId);
 
     if (updateError) {
-      console.error("Failed to update profile:", updateError);
       return NextResponse.json(
         { error: "Failed to reject user" },
         { status: 500 }
@@ -95,7 +94,6 @@ export async function POST(request: Request) {
         await sendRejectionDM(discordId, characterName, reason);
       }
     } catch (dmError) {
-      console.error("Failed to send rejection DM:", dmError);
       // Don't fail the rejection if DM fails
     }
 
@@ -104,7 +102,6 @@ export async function POST(request: Request) {
       message: "User rejected successfully"
     });
   } catch (error) {
-    console.error("Rejection error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

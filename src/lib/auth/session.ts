@@ -21,13 +21,12 @@ export async function getUserProfile(userId: string) {
   const supabase = await createClient();
   
   const { data: profile, error } = await supabase
-    .from("user_profiles")
+    .from("users")
     .select("*")
     .eq("id", userId)
     .single();
 
   if (error) {
-    console.error("Error fetching user profile:", error);
     return null;
   }
 

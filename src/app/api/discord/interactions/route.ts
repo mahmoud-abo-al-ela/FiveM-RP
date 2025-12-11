@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { sendApprovalDM, sendRejectionDM, assignDiscordRole } from "@/lib/discord/webhook";
+import nacl from "tweetnacl";
 
 // Discord interaction types
 const InteractionType = {
@@ -23,9 +24,9 @@ const InteractionResponseType = {
 };
 
 /**
- * Verify Discord interaction signature
+ * Verify Discord interaction signature using Ed25519
  */
-async function verifyDiscordRequest(request: Request): Promise<boolean> {
+async function verifyDiscordRequest(request: Request, body: string): Promise<boolean> {
   const signature = request.headers.get("x-signature-ed25519");
   const timestamp = request.headers.get("x-signature-timestamp");
   const publicKey = process.env.DISCORD_PUBLIC_KEY;
@@ -34,23 +35,27 @@ async function verifyDiscordRequest(request: Request): Promise<boolean> {
     return false;
   }
 
-  // For production, implement proper Ed25519 signature verification
-  // For now, we'll skip verification in development
-  // You can use the 'tweetnacl' package for verification:
-  // import nacl from 'tweetnacl';
-  // const isValid = nacl.sign.detached.verify(
-  //   Buffer.from(timestamp + body),
-  //   Buffer.from(signature, 'hex'),
-  //   Buffer.from(publicKey, 'hex')
-  // );
+  try {
+    // Verify the signature using Ed25519
+    const isValid = nacl.sign.detached.verify(
+      Buffer.from(timestamp + body),
+      Buffer.from(signature, "hex"),
+      Buffer.from(publicKey, "hex")
+    );
 
-  return true; // Skip verification for now
+    return isValid;
+  } catch (error) {
+    return false;
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    // Verify Discord signature
-    const isValid = await verifyDiscordRequest(request);
+    // Read the raw body for signature verification
+    const rawBody = await request.text();
+    
+    // ✅ ALWAYS verify Discord signature first (including PING requests)
+    const isValid = await verifyDiscordRequest(request, rawBody);
     if (!isValid) {
       return NextResponse.json(
         { error: "Invalid request signature" },
@@ -58,10 +63,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
+    // Parse the body after signature verification
+    const body = JSON.parse(rawBody);
     const { type, data, member, message } = body;
 
-    // Handle Discord PING
+    // Handle PING requests
     if (type === InteractionType.PING) {
       return NextResponse.json({ type: InteractionResponseType.PONG });
     }
@@ -80,11 +86,11 @@ export async function POST(request: Request) {
         );
       }
 
-      const supabase = await createClient();
+      const supabase = createServiceRoleClient();
 
       // Get user profile
       const { data: profile, error: profileError } = await supabase
-        .from("user_profiles")
+        .from("users")
         .select("*, activation_request_data")
         .eq("id", userId)
         .single();
@@ -110,14 +116,23 @@ export async function POST(request: Request) {
       }
 
       const activationData = profile.activation_request_data as any;
-      const discordId = activationData?.discordId;
+      let discordId = activationData?.discordId;
+      
+      // Fallback: Try to get Discord ID from user auth metadata if not in activation data
+      if (!discordId) {
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+        if (authUser?.user) {
+          discordId = authUser.user.user_metadata?.provider_id || authUser.user.user_metadata?.sub;
+        }
+      }
+      
       const characterName = profile.display_name || activationData?.characterName;
       const staffMember = member?.user?.username || "Staff";
 
       if (action === "approve") {
         // Update profile to activated
         const { error: updateError } = await supabase
-          .from("user_profiles")
+          .from("users")
           .update({
             activated: true,
             activated_at: new Date().toISOString(),
@@ -127,7 +142,6 @@ export async function POST(request: Request) {
           .eq("id", userId);
 
         if (updateError) {
-          console.error("Failed to update profile:", updateError);
           return NextResponse.json({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
@@ -137,7 +151,7 @@ export async function POST(request: Request) {
           });
         }
 
-        // Send DM to user
+        // Send DM to user and assign role
         try {
           if (discordId) {
             await sendApprovalDM(discordId, characterName);
@@ -151,11 +165,11 @@ export async function POST(request: Request) {
             try {
               await assignDiscordRole(guildId, discordId, roleId);
             } catch (roleError) {
-              console.error("Failed to assign Discord role:", roleError);
+              // Role assignment failed, but continue
             }
           }
         } catch (dmError) {
-          console.error("Failed to send approval DM:", dmError);
+          // DM failed, but continue
         }
 
         // Update the original message
@@ -188,7 +202,7 @@ export async function POST(request: Request) {
 
         // Update profile to rejected
         const { error: updateError } = await supabase
-          .from("user_profiles")
+          .from("users")
           .update({
             activated: false,
             rejected_at: new Date().toISOString(),
@@ -197,7 +211,6 @@ export async function POST(request: Request) {
           .eq("id", userId);
 
         if (updateError) {
-          console.error("Failed to update profile:", updateError);
           return NextResponse.json({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
@@ -213,7 +226,7 @@ export async function POST(request: Request) {
             await sendRejectionDM(discordId, characterName, defaultReason);
           }
         } catch (dmError) {
-          console.error("Failed to send rejection DM:", dmError);
+          // DM failed, but continue
         }
 
         // Update the original message
@@ -246,7 +259,6 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   } catch (error) {
-    console.error("Discord interaction error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

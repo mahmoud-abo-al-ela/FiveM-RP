@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from("user_profiles")
+      .from("users")
       .select("*")
       .eq("id", user.id)
       .single();
@@ -24,7 +24,7 @@ export async function GET() {
       // If profile doesn't exist, create one
       if (profileError.code === "PGRST116") {
         const { data: newProfile, error: createError } = await supabase
-          .from("user_profiles")
+          .from("users")
           .insert({
             id: user.id,
             display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
@@ -50,7 +50,6 @@ export async function GET() {
 
     return NextResponse.json(profile);
   } catch (error) {
-    console.error("Profile API error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -75,7 +74,7 @@ export async function PUT(request: Request) {
     const { display_name, bio, in_game_name } = body;
 
     const { data: profile, error: updateError } = await supabase
-      .from("user_profiles")
+      .from("users")
       .update({
         display_name,
         bio,
@@ -95,7 +94,6 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(profile);
   } catch (error) {
-    console.error("Profile update error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

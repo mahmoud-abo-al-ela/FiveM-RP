@@ -72,7 +72,6 @@ export default function ActivatePage() {
 
       router.push("/");
     } catch (error) {
-      console.error("Activation error:", error);
       toast({
         title: "Activation Failed",
         description: error instanceof Error ? error.message : "There was an error activating your account.",

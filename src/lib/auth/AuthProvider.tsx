@@ -42,6 +42,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
 
+      // Handle token refresh errors (expired session, deleted user)
+      if (event === "TOKEN_REFRESHED" && !session) {
+        // Session expired or user deleted, redirect to home
+        window.location.href = "/";
+        return;
+      }
+
       // Sync user data when signed in
       if (event === "SIGNED_IN" && session?.user) {
         try {
@@ -50,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             headers: { "Content-Type": "application/json" },
           });
         } catch (error) {
-          console.error("Failed to sync user:", error);
+          // Failed to sync user
         }
       }
     });
@@ -67,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (error) {
-      console.error("Error signing in with Discord:", error);
+      // Error signing in with Discord
     }
   };
 
@@ -76,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       console.error("Error signing out:", error);
     }
+    window.location.href = "/";
   };
 
   return (

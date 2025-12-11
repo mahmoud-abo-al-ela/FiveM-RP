@@ -7,11 +7,9 @@ import type {
   User,
   StoreItem,
   ServerStatus,
-  NewsArticle,
   InsertUser,
   InsertStoreItem,
   InsertServerStatus,
-  InsertNewsArticle,
 } from "@/db/schema";
 
 // Users
@@ -102,37 +100,4 @@ export const updateServerStatus = async (status: InsertServerStatus) => {
   
   if (error) throw error;
   return data as ServerStatus;
-};
-
-// News Articles
-export const getNewsArticles = async () => {
-  const { data, error } = await supabase
-    .from("news_articles")
-    .select("*")
-    .order("published_at", { ascending: false });
-  
-  if (error) throw error;
-  return data as NewsArticle[];
-};
-
-export const getNewsArticleById = async (id: number) => {
-  const { data, error } = await supabase
-    .from("news_articles")
-    .select("*")
-    .eq("id", id)
-    .single();
-  
-  if (error) throw error;
-  return data as NewsArticle;
-};
-
-export const createNewsArticle = async (article: InsertNewsArticle) => {
-  const { data, error } = await supabase
-    .from("news_articles")
-    .insert(article)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as NewsArticle;
 };
