@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Terminal, Shield, Users, ShoppingCart, Menu, X, Calendar, Trophy, User, LogOut, Settings, LayoutDashboard } from "lucide-react";
+import { Terminal, Shield, ShoppingCart, Menu, X, Calendar, Trophy, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -24,6 +24,7 @@ export function Navbar() {
   const { user, loading, signInWithDiscord, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminSession, setAdminSession] = useState<{ username: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ activated: boolean; display_name: string | null; in_game_name: string | null } | null>(null);
 
   useEffect(() => {
     async function checkAdmin() {
@@ -52,18 +53,24 @@ export function Navbar() {
       if (!user) {
         setIsAdmin(false);
         setAdminSession(null);
+        setUserProfile(null);
         return;
       }
       
       const supabase = createClient();
       const { data: profile } = await supabase
         .from("users")
-        .select("role")
+        .select("role, activated, display_name, in_game_name")
         .eq("id", user.id)
         .single();
       
       setIsAdmin(profile?.role === "admin");
       setAdminSession(null);
+      setUserProfile(profile ? {
+        activated: profile.activated,
+        display_name: profile.display_name,
+        in_game_name: profile.in_game_name
+      } : null);
     }
     
     checkAdmin();
@@ -84,10 +91,28 @@ export function Navbar() {
     return `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
   };
 
+  const getLogoHref = () => {
+    // If user is not logged in, go to home
+    if (!user || !userProfile) return "/";
+    
+    // If admin, go to home
+    if (isAdmin) return "/";
+    
+    // If user has no profile (no display_name or in_game_name), go to activate
+    const hasProfile = userProfile.display_name && userProfile.in_game_name;
+    if (!hasProfile) return "/auth/activate";
+    
+    // If user has profile but not activated, go to pending
+    if (!userProfile.activated) return "/auth/pending";
+    
+    // If activated, go to home
+    return "/";
+  };
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-display text-2xl font-bold tracking-wider text-primary hover:text-primary/80 transition-colors">
+        <Link href={getLogoHref()} className="flex items-center gap-2 font-display text-2xl font-bold tracking-wider text-primary hover:text-primary/80 transition-colors">
           <span className="text-glow">LEGACY</span> <span className="text-white">RP</span>
         </Link>
 
