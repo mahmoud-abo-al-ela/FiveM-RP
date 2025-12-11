@@ -31,43 +31,26 @@ export async function POST() {
           discord_username: discordUsername,
           discord_avatar: discordAvatar,
           email: email,
+          display_name: discordUsername || email?.split("@")[0] || "User",
           last_login: new Date().toISOString(),
           role: "user",
-        },
-        {
-          onConflict: "id",
-        }
-      );
-
-    if (upsertError) {
-      return NextResponse.json(
-        { error: "Failed to sync user data" },
-        { status: 500 }
-      );
-    }
-
-    // Check if user profile exists, create if not
-    const { data: existingProfile } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", user.id)
-      .single();
-
-    if (!existingProfile) {
-      const { error: profileError } = await supabase
-        .from("users")
-        .insert({
-          id: user.id,
-          display_name: discordUsername || email?.split("@")[0] || "User",
           playtime_hours: 0,
           level: 1,
           experience_points: 0,
           reputation_score: 0,
-        });
+        },
+        {
+          onConflict: "id",
+          ignoreDuplicates: false,
+        }
+      );
 
-      if (profileError) {
-        // Don't fail the request if profile creation fails
-      }
+    if (upsertError) {
+      console.error("User sync error:", upsertError);
+      return NextResponse.json(
+        { error: "Failed to sync user data", details: upsertError.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true });

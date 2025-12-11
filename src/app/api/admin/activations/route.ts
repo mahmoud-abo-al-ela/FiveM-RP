@@ -26,6 +26,9 @@ export async function GET() {
       .select(SELECT_FIELDS)
       .eq("activated", false)
       .is("rejected_at", null)
+      .not("display_name", "is", null)
+      .not("in_game_name", "is", null)
+      .not("bio", "is", null)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -40,46 +43,7 @@ export async function GET() {
   }
 }
 
-// ---------------------------
-// POST: Approve or Reject User
-// ---------------------------
-export async function POST(request: Request) {
-  try {
-    const admin = await verifyAdminSession();
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { userId, action } = await request.json();
-
-    // Fast validation
-    if (!userId || !["approve", "reject"].includes(action)) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-    }
-
-    const supabase = await getSupabase();
-
-    let updatePayload: Record<string, any> = {};
-
-    if (action === "approve") {
-      updatePayload = { activated: true, rejected_at: null };
-    } else {
-      updatePayload = { rejected_at: new Date().toISOString() };
-    }
-
-    const { error } = await supabase
-      .from("users")
-      .update(updatePayload)
-      .eq("id", userId);
-
-    if (error) {
-      console.error("Supabase POST error:", error);
-      return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Server POST error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+// Note: Approval/Rejection is now handled through Discord interactions
+// See: src/app/api/discord/interactions/route.ts
+// See: src/app/api/activation/approve/route.ts
+// See: src/app/api/activation/reject/route.ts

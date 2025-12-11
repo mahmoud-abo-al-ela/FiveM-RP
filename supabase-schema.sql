@@ -20,7 +20,9 @@ CREATE TABLE IF NOT EXISTS users (
   experience_points INTEGER DEFAULT 0,
   reputation_score INTEGER DEFAULT 0,
   activated BOOLEAN DEFAULT false,
+  activated_at TIMESTAMPTZ,
   rejected_at TIMESTAMPTZ,
+  rejection_reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_login TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

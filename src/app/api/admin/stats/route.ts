@@ -26,7 +26,10 @@ export async function GET() {
         .from("users")
         .select("id", countOptions)
         .eq("activated", false)
-        .is("rejected_at", null),
+        .is("rejected_at", null)
+        .not("display_name", "is", null)
+        .not("in_game_name", "is", null)
+        .not("bio", "is", null),
       supabase.from("store_items").select("id", countOptions),
       supabase.from("store_items").select("id", countOptions).eq("available", true),
     ]);

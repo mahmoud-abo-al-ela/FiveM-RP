@@ -79,58 +79,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // Store activation request data (not activated yet)
-    const activationRequestData = {
-      characterName,
-      age,
-      steamOrEpicLink,
-      rpExperience,
-      discordId,
-      discordUsername,
-      submittedAt: new Date().toISOString(),
-    };
-
     // Update or create user profile with pending activation
     const { error: profileError } = await supabase
       .from("users")
       .upsert({
         id: user.id,
+        discord_id: discordId,
+        discord_username: discordUsername,
         display_name: characterName,
         in_game_name: characterName,
         bio: rpExperience,
         activated: false, // Not activated yet - waiting for staff approval
-        activation_request_data: activationRequestData,
+        role: "user",
+        last_login: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
     if (profileError) {
+      console.error("Profile update error:", profileError);
       return NextResponse.json(
-        { error: "Failed to update profile" },
+        { error: "Failed to update profile", details: profileError.message },
         { status: 500 }
       );
     }
 
-    // Update user info
-    const { error: userError } = await supabase
-      .from("users")
-      .update({ 
-        role: "user",
-        last_login: new Date().toISOString()
-      })
-      .eq("id", user.id);
-
     // Store Steam/Epic link in user metadata
     await supabase.auth.updateUser({
-      data: { steam_or_epic_link: steamOrEpicLink }
+      data: { 
+        steam_or_epic_link: steamOrEpicLink,
+        age,
+        rp_experience: rpExperience
+      }
     });
-
-    if (userError) {
-      // User update error
-    }
 
     // Send activation request to staff Discord channel
     try {
-      const result = await sendActivationRequestToStaff(
+      await sendActivationRequestToStaff(
         characterName,
         user.id,
         discordId,
@@ -141,15 +125,8 @@ export async function POST(request: Request) {
           rpExperience,
         }
       );
-
-      // Store Discord message ID for later reference
-      if (result.success && result.id) {
-        await supabase
-          .from("users")
-          .update({ discord_message_id: result.id })
-          .eq("id", user.id);
-      }
     } catch (discordError) {
+      console.error("Discord notification error:", discordError);
       // Don't fail the activation if Discord notification fails
     }
 

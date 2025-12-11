@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from("users")
-        .select("*, activation_request_data")
+        .select("*")
         .eq("id", userId)
         .single();
 
@@ -115,10 +115,9 @@ export async function POST(request: Request) {
         });
       }
 
-      const activationData = profile.activation_request_data as any;
-      let discordId = activationData?.discordId;
+      // Get Discord ID from profile or auth metadata
+      let discordId = profile.discord_id;
       
-      // Fallback: Try to get Discord ID from user auth metadata if not in activation data
       if (!discordId) {
         const { data: authUser } = await supabase.auth.admin.getUserById(userId);
         if (authUser?.user) {
@@ -126,7 +125,7 @@ export async function POST(request: Request) {
         }
       }
       
-      const characterName = profile.display_name || activationData?.characterName;
+      const characterName = profile.display_name;
       const staffMember = member?.user?.username || "Staff";
 
       if (action === "approve") {

@@ -46,10 +46,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get user profile with activation request data
+    // Get user profile
     const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select("*, activation_request_data")
+      .select("*")
       .eq("id", userId)
       .single();
 
@@ -78,22 +78,23 @@ export async function POST(request: Request) {
       .eq("id", userId);
 
     if (updateError) {
+      console.error("Rejection update error:", updateError);
       return NextResponse.json(
-        { error: "Failed to reject user" },
+        { error: "Failed to reject user", details: updateError.message },
         { status: 500 }
       );
     }
 
     // Send DM to user
     try {
-      const activationData = profile.activation_request_data as any;
-      const discordId = activationData?.discordId;
-      const characterName = profile.display_name || activationData?.characterName;
+      const discordId = profile.discord_id;
+      const characterName = profile.display_name;
 
       if (discordId) {
         await sendRejectionDM(discordId, characterName, reason);
       }
     } catch (dmError) {
+      console.error("DM error:", dmError);
       // Don't fail the rejection if DM fails
     }
 

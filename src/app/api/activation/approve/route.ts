@@ -39,10 +39,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get user profile with activation request data
+    // Get user profile
     const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select("*, activation_request_data")
+      .select("*")
       .eq("id", userId)
       .single();
 
@@ -72,17 +72,17 @@ export async function POST(request: Request) {
       .eq("id", userId);
 
     if (updateError) {
+      console.error("Activation update error:", updateError);
       return NextResponse.json(
-        { error: "Failed to activate user" },
+        { error: "Failed to activate user", details: updateError.message },
         { status: 500 }
       );
     }
 
     // Send DM to user
     try {
-      const activationData = profile.activation_request_data as any;
-      const discordId = activationData?.discordId;
-      const characterName = profile.display_name || activationData?.characterName;
+      const discordId = profile.discord_id;
+      const characterName = profile.display_name;
 
       if (discordId) {
         await sendApprovalDM(discordId, characterName);
@@ -96,10 +96,12 @@ export async function POST(request: Request) {
         try {
           await assignDiscordRole(guildId, discordId, roleId);
         } catch (roleError) {
+          console.error("Role assignment error:", roleError);
           // Don't fail the approval if role assignment fails
         }
       }
     } catch (dmError) {
+      console.error("DM error:", dmError);
       // Don't fail the approval if DM fails
     }
 
