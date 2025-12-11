@@ -87,18 +87,48 @@ export default function Rules() {
       ) : (
         <Tabs defaultValue={visibleCategories[0]?.slug} className="max-w-4xl mx-auto">
           <TabsList 
-            className="grid w-full bg-black/40 border border-white/10 p-1 mb-8"
+            className="grid w-full bg-black/40 backdrop-blur-sm border border-white/10 p-2 mb-8 rounded-xl gap-2"
             style={{ gridTemplateColumns: `repeat(${visibleCategories.length}, minmax(0, 1fr))` }}
           >
-            {visibleCategories.map((category) => (
-              <TabsTrigger
-                key={category.id}
-                value={category.slug}
-                className="font-display uppercase tracking-wider data-[state=active]:text-white transition-colors"
-              >
-                {category.name}
-              </TabsTrigger>
-            ))}
+            {visibleCategories.map((category) => {
+              const IconComponent = category.icon && (LucideIcons as any)[category.icon] 
+                ? (LucideIcons as any)[category.icon] 
+                : Folder;
+              
+              return (
+                <TabsTrigger
+                  key={category.id}
+                  value={category.slug}
+                  className="relative font-display uppercase tracking-wider transition-all duration-300 data-[state=active]:text-white data-[state=inactive]:text-muted-foreground hover:text-white rounded-lg px-4 py-3 data-[state=active]:shadow-lg flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: undefined,
+                  }}
+                  data-category-color={category.color}
+                >
+                  <IconComponent className="h-4 w-4" />
+                  <span className="hidden sm:inline">{category.name}</span>
+                  <span className="sm:hidden">{category.name.substring(0, 3)}</span>
+                  <style jsx>{`
+                    [data-state="active"][data-category-color="${category.color}"] {
+                      background: linear-gradient(135deg, ${category.color}20 0%, ${category.color}40 100%);
+                      border: 1px solid ${category.color}60;
+                    }
+                    [data-state="active"][data-category-color="${category.color}"]::before {
+                      content: '';
+                      position: absolute;
+                      inset: 0;
+                      border-radius: 0.5rem;
+                      padding: 1px;
+                      background: linear-gradient(135deg, ${category.color}80, ${category.color}40);
+                      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                      -webkit-mask-composite: xor;
+                      mask-composite: exclude;
+                      pointer-events: none;
+                    }
+                  `}</style>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
           {visibleCategories.map((category) => (
@@ -128,39 +158,77 @@ function RuleSection({ category, items }: { category: RuleCategory; items: Rule[
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
-      <div className="flex items-center gap-3 mb-6">
-        <IconComponent className="h-8 w-8" style={{ color: category.color }} />
-        <div>
-          <h2 className="text-2xl font-display uppercase">{category.name}</h2>
+      <div className="flex items-start gap-4 mb-8 p-6 rounded-xl bg-card/30 backdrop-blur-sm border border-white/10">
+        <div 
+          className="flex items-center justify-center w-14 h-14 rounded-xl shrink-0"
+          style={{ 
+            backgroundColor: `${category.color}20`,
+            border: `2px solid ${category.color}40`
+          }}
+        >
+          <IconComponent className="h-7 w-7" style={{ color: category.color }} />
+        </div>
+        <div className="flex-1">
+          <h2 
+            className="text-3xl font-display font-bold uppercase mb-2"
+            style={{ color: category.color }}
+          >
+            {category.name}
+          </h2>
           {category.description && (
-            <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
+            <p className="text-base text-muted-foreground leading-relaxed">
+              {category.description}
+            </p>
           )}
         </div>
       </div>
 
       {items.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          No rules in this category yet.
+        <div className="text-center py-12 text-muted-foreground bg-card/30 rounded-xl border border-dashed border-white/10">
+          <p className="text-lg">No rules in this category yet.</p>
         </div>
       ) : (
         <div className="grid gap-4">
           {items.map((rule, i) => (
-            <Card
+            <motion.div
               key={rule.id}
-              className="bg-card/50 border-white/5 hover:border-white/20 transition-colors"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
             >
-              <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <span style={{ color: category.color, opacity: 0.8 }}>§{i + 1}.0</span>
-                  {rule.title}
-                </CardTitle>
-              </CardHeader>
-              {rule.description && (
-                <CardContent>
-                  <p className="text-muted-foreground">{rule.description}</p>
-                </CardContent>
-              )}
-            </Card>
+              <Card
+                className="group relative bg-card/50 backdrop-blur-sm border-white/5 hover:border-white/20 transition-all duration-300 hover:shadow-xl overflow-hidden"
+              >
+                <div 
+                  className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-2"
+                  style={{ 
+                    background: `linear-gradient(180deg, ${category.color}80 0%, ${category.color}40 100%)` 
+                  }}
+                />
+                <CardHeader className="pl-6">
+                  <CardTitle className="text-lg font-bold flex items-center gap-3">
+                    <span 
+                      className="flex items-center justify-center w-10 h-10 rounded-lg font-mono text-sm shrink-0"
+                      style={{ 
+                        backgroundColor: `${category.color}20`,
+                        color: category.color,
+                        border: `1px solid ${category.color}40`
+                      }}
+                    >
+                      §{i + 1}
+                    </span>
+                    <span className="flex-1">{rule.title}</span>
+                  </CardTitle>
+                </CardHeader>
+                {rule.description && (
+                  <CardContent className="pl-6">
+                    <p className="text-muted-foreground leading-relaxed pl-[52px]">
+                      {rule.description}
+                    </p>
+                  </CardContent>
+                )}
+              </Card>
+            </motion.div>
           ))}
         </div>
       )}
