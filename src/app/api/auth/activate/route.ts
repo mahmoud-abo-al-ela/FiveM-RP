@@ -31,7 +31,7 @@ const activationSchema = z.object({
     ),
   rpExperience: z
     .string()
-    .min(30, "Please provide at least 50 characters describing your RP experience")
+    .min(30, "Please provide at least 30 characters describing your RP experience")
     .max(1000, "RP experience description is too long"),
   agreeToRules: z.boolean().refine((val) => val === true, "You must agree to the server rules"),
   agreeToTerms: z.boolean().refine((val) => val === true, "You must agree to the terms of service"),

@@ -16,7 +16,7 @@ export async function GET() {
     // Check if user has a profile
     const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select("id, display_name, in_game_name")
+      .select("id, display_name, in_game_name, activated, rejected_at")
       .eq("id", user.id)
       .single();
 
@@ -30,7 +30,11 @@ export async function GET() {
     // User has profile if display_name and in_game_name are set
     const hasProfile = profile && profile.display_name && profile.in_game_name;
 
-    return NextResponse.json({ hasProfile: !!hasProfile });
+    return NextResponse.json({ 
+      hasProfile: !!hasProfile,
+      activated: profile?.activated || false,
+      rejected: !!profile?.rejected_at
+    });
   } catch (error) {
     return NextResponse.json(
       { error: "Internal server error" },

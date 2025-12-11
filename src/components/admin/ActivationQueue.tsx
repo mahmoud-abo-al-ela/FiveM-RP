@@ -85,14 +85,6 @@ export function ActivationQueue() {
         </div>
       </CardHeader>
       <CardContent>
-        <Alert className="mb-6 bg-[#5865F2]/10 border-[#5865F2]/20">
-          <AlertDescription className="flex items-center gap-2 text-sm">
-            <MessageSquare className="h-4 w-4 text-[#5865F2]" />
-            <span>
-              All activation actions (approve/reject) must be performed in the Discord channel using the interactive buttons.
-            </span>
-          </AlertDescription>
-        </Alert>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

@@ -39,7 +39,7 @@ export default function SignInPage() {
       >
         <Card className="w-full max-w-md bg-card/30 border-white/5 backdrop-blur-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-display font-bold uppercase mb-2">
+            <CardTitle className="text-3xl font-display font-bold uppercase mb-2 w-full">
               Welcome to <span className="text-primary">Legacy RP</span>
             </CardTitle>
             <CardDescription className="text-base">

@@ -32,16 +32,20 @@ export default function AuthCallbackPage() {
             console.error("Error syncing user:", await response.text());
           }
 
-          // Check if user has completed profile setup
+          // Check if user has completed profile setup and activation status
           const profileResponse = await fetch("/api/auth/check-profile");
           const profileData = await profileResponse.json();
 
           if (!profileData.hasProfile) {
-            // New user - redirect to activation
+            // New user - redirect to activation form
             router.push("/auth/activate");
+          } else if (!profileData.activated) {
+            // User has profile but not activated - redirect to pending page
+            const status = profileData.rejected ? "rejected" : "pending";
+            router.push(`/auth/pending?status=${status}`);
           } else {
-            // Existing user - redirect to profile
-            router.push("/profile");
+            // Activated user - redirect to home
+            router.push("/");
           }
         } catch (err) {
           console.error("Failed to sync user:", err);

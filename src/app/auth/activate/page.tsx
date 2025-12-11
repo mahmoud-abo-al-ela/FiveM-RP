@@ -66,11 +66,11 @@ export default function ActivatePage() {
       }
 
       toast({
-        title: "Account Activated!",
-        description: "Welcome to Legacy RP. Your account has been activated successfully.",
+        title: "Activation Request Submitted!",
+        description: "Your request is being reviewed by staff. You'll be notified via Discord.",
       });
 
-      router.push("/");
+      router.push("/auth/pending?status=pending");
     } catch (error) {
       toast({
         title: "Activation Failed",
