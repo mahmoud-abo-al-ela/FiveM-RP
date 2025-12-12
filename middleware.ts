@@ -20,7 +20,6 @@ export async function middleware(request: NextRequest) {
     "/api/auth/check-profile",
     "/api/auth/callback",
     "/api/discord/interactions",
-    "/api/rules",
   ];
 
   // Skip proxy for public API + static files
@@ -68,13 +67,21 @@ export async function middleware(request: NextRequest) {
   const adminSessionCookie = request.cookies.get("admin_session");
 
   if (adminSessionCookie?.value) {
+    // Block admin from accessing any auth routes (signin, admin login, etc.)
+    if (pathname.startsWith("/auth")) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    
     // Allow full access to /admin and /api/admin
     if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
       return response;
     }
+    
+    // Allow admin to access other pages
+    return response;
   }
 
-  // Always allow access to admin login page BEFORE user activation checks
+  // Always allow access to admin login page BEFORE user activation checks (only if no admin session)
   if (pathname.startsWith("/auth/admin")) {
     return response;
   }

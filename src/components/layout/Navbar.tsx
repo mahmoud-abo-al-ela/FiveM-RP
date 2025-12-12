@@ -28,31 +28,29 @@ export function Navbar() {
 
   useEffect(() => {
     async function checkAdmin() {
-      // Only check for admin session if we're on an admin page or if there's a user
-      const isAdminPage = pathname?.startsWith('/admin');
-      
-      // Check for admin session cookie only if on admin pages
-      if (isAdminPage) {
-        try {
-          const res = await fetch("/api/auth/admin/verify");
-          if (res.ok) {
-            const data = await res.json();
-            if (data.authenticated) {
-              setAdminSession({ username: data.admin.username });
-              setIsAdmin(true);
-              return;
-            }
+      // Always check for admin session cookie first (on all pages)
+      try {
+        const res = await fetch("/api/auth/admin/verify");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            setAdminSession({ username: data.admin.username });
+            setIsAdmin(true);
+            setUserProfile(null);
+            return;
           }
-        } catch (error) {
-          // Silently fail if admin check fails
-          console.debug("Admin session check failed:", error);
         }
+      } catch (error) {
+        // Silently fail if admin check fails
+        console.debug("Admin session check failed:", error);
       }
+
+      // No admin session, reset admin state
+      setAdminSession(null);
 
       // Check if regular user has admin role
       if (!user) {
         setIsAdmin(false);
-        setAdminSession(null);
         setUserProfile(null);
         return;
       }
@@ -65,7 +63,6 @@ export function Navbar() {
         .single();
       
       setIsAdmin(profile?.role === "admin");
-      setAdminSession(null);
       setUserProfile(profile ? {
         activated: profile.activated,
         display_name: profile.display_name,

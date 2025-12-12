@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Folder } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 interface RuleCategory {
   id: number;
@@ -25,6 +26,53 @@ interface Rule {
   description: string;
   display_order: number;
   visible: boolean;
+}
+
+function CategoryTab({ 
+  category, 
+  IconComponent 
+}: { 
+  category: RuleCategory; 
+  IconComponent: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+}) {
+  const [isActive, setIsActive] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    
+    const checkActive = () => setIsActive(el.getAttribute("data-state") === "active");
+    
+    const observer = new MutationObserver(checkActive);
+    observer.observe(el, { attributes: true, attributeFilter: ["data-state"] });
+    checkActive();
+    
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <TabsTrigger
+      ref={ref}
+      value={category.slug}
+      className=" cursor-pointer relative font-display uppercase tracking-wider transition-all duration-300 hover:text-white rounded-lg px-4 py-3 flex items-center justify-center gap-2 data-[state=inactive]:text-muted-foreground data-[state=inactive]:bg-transparent"
+      style={{
+        background: isActive 
+          ? `linear-gradient(135deg, ${category.color}30 0%, ${category.color}50 100%)` 
+          : "transparent",
+        border: isActive ? `1px solid ${category.color}80` : "1px solid transparent",
+        color: isActive ? "#fff" : undefined,
+        boxShadow: isActive ? `0 0 20px ${category.color}30` : undefined,
+      }}
+    >
+      <IconComponent 
+        className="h-4 w-4" 
+        style={{ color: isActive ? category.color : undefined }}
+      />
+      <span className="hidden sm:inline">{category.name}</span>
+      <span className="sm:hidden">{category.name.substring(0, 3)}</span>
+    </TabsTrigger>
+  );
 }
 
 export default function Rules() {
@@ -87,7 +135,7 @@ export default function Rules() {
       ) : (
         <Tabs defaultValue={visibleCategories[0]?.slug} className="max-w-4xl mx-auto">
           <TabsList 
-            className="grid w-full bg-black/40 backdrop-blur-sm border border-white/10 p-2 mb-8 rounded-xl gap-2"
+            className="grid w-full bg-black/60 backdrop-blur-md border border-white/10 p-2 mb-8 rounded-xl gap-3 h-auto"
             style={{ gridTemplateColumns: `repeat(${visibleCategories.length}, minmax(0, 1fr))` }}
           >
             {visibleCategories.map((category) => {
@@ -96,37 +144,11 @@ export default function Rules() {
                 : Folder;
               
               return (
-                <TabsTrigger
+                <CategoryTab
                   key={category.id}
-                  value={category.slug}
-                  className="relative font-display uppercase tracking-wider transition-all duration-300 data-[state=active]:text-white data-[state=inactive]:text-muted-foreground hover:text-white rounded-lg px-4 py-3 data-[state=active]:shadow-lg flex items-center justify-center gap-2"
-                  style={{
-                    backgroundColor: undefined,
-                  }}
-                  data-category-color={category.color}
-                >
-                  <IconComponent className="h-4 w-4" />
-                  <span className="hidden sm:inline">{category.name}</span>
-                  <span className="sm:hidden">{category.name.substring(0, 3)}</span>
-                  <style jsx>{`
-                    [data-state="active"][data-category-color="${category.color}"] {
-                      background: linear-gradient(135deg, ${category.color}20 0%, ${category.color}40 100%);
-                      border: 1px solid ${category.color}60;
-                    }
-                    [data-state="active"][data-category-color="${category.color}"]::before {
-                      content: '';
-                      position: absolute;
-                      inset: 0;
-                      border-radius: 0.5rem;
-                      padding: 1px;
-                      background: linear-gradient(135deg, ${category.color}80, ${category.color}40);
-                      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-                      -webkit-mask-composite: xor;
-                      mask-composite: exclude;
-                      pointer-events: none;
-                    }
-                  `}</style>
-                </TabsTrigger>
+                  category={category}
+                  IconComponent={IconComponent}
+                />
               );
             })}
           </TabsList>
@@ -215,7 +237,7 @@ function RuleSection({ category, items }: { category: RuleCategory; items: Rule[
                         border: `1px solid ${category.color}40`
                       }}
                     >
-                      §{i + 1}
+                      {i + 1}
                     </span>
                     <span className="flex-1">{rule.title}</span>
                   </CardTitle>
