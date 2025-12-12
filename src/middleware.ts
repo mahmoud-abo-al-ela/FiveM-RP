@@ -7,7 +7,6 @@ export async function middleware(request: NextRequest) {
   // Public pages (no login required)
   const publicRoutes = [
     "/",
-    "/rules",
     "/auth/signin",
     "/auth/callback",
     "/auth/error",
