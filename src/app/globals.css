@@ -81,6 +81,8 @@
     }
   }
 
+
+
   @keyframes collapsible-down {
     from {
       height: 0;
@@ -124,6 +126,8 @@
 
   --primary: 280 100% 60%;
   /* Neon Purple */
+  --primary-rgb: 179, 51, 255;
+  /* RGB values for glow effects */
   --primary-foreground: 0 0% 100%;
 
   --secondary: 180 100% 50%;
@@ -295,5 +299,252 @@
         transparent 100%);
     background-size: 1000px 100%;
     animation: shimmer 3s infinite;
+  }
+
+
+
+  /* Logo Slide Animation - slides to end of title (last letter P) */
+  @keyframes logo-slide {
+
+    0%,
+    10% {
+      transform: translateX(0) rotate(0deg) scale(1);
+    }
+
+    50% {
+      transform: translateX(280px) rotate(360deg) scale(1.15);
+    }
+
+    90%,
+    100% {
+      transform: translateX(0) rotate(720deg) scale(1);
+    }
+  }
+
+  .animate-logo-slide {
+    animation: logo-slide 6s ease-in-out infinite;
+  }
+
+  /* Motion trail effect */
+  @keyframes logo-trail {
+
+    0%,
+    10% {
+      opacity: 0;
+      transform: translateX(0) scaleX(0);
+    }
+
+    50% {
+      opacity: 1;
+      transform: translateX(130px) scaleX(1.5);
+    }
+
+    90%,
+    100% {
+      opacity: 0;
+      transform: translateX(0) scaleX(0);
+    }
+  }
+
+  .animate-logo-trail {
+    animation: logo-trail 6s ease-in-out infinite;
+  }
+
+
+  @keyframes letter-reveal-1 {
+    0%,
+    15% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    20%,
+    85% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    90%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes letter-reveal-2 {
+    0%,
+    18% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    23%,
+    82% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    87%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes letter-reveal-3 {
+    0%,
+    21% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    26%,
+    79% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    84%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes letter-reveal-4 {
+    0%,
+    24% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    29%,
+    76% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    81%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes letter-reveal-5 {
+    0%,
+    27% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    32%,
+    73% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    78%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes letter-reveal-6 {
+    0%,
+    30% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    35%,
+    70% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    75%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes letter-reveal-7 {
+    0%,
+    33% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    38%,
+    67% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    72%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes letter-reveal-8 {
+    0%,
+    36% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    41%,
+    64% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    69%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+
+  .animate-letter-1 {
+    animation: letter-reveal-1 6s ease-in-out infinite;
+  }
+
+  .animate-letter-2 {
+    animation: letter-reveal-2 6s ease-in-out infinite;
+  }
+
+  .animate-letter-3 {
+    animation: letter-reveal-3 6s ease-in-out infinite;
+  }
+
+  .animate-letter-4 {
+    animation: letter-reveal-4 6s ease-in-out infinite;
+  }
+
+  .animate-letter-5 {
+    animation: letter-reveal-5 6s ease-in-out infinite;
+  }
+
+  .animate-letter-6 {
+    animation: letter-reveal-6 6s ease-in-out infinite;
+  }
+
+  .animate-letter-7 {
+    animation: letter-reveal-7 6s ease-in-out infinite;
+  }
+
+  .animate-letter-8 {
+    animation: letter-reveal-8 6s ease-in-out infinite;
+  }
+
+  /* Title underline animation - sweeps in after letters */
+  @keyframes title-underline {
+
+    0%,
+    92% {
+      width: 0;
+      opacity: 0;
+    }
+
+    97%,
+    100% {
+      width: 100%;
+      opacity: 1;
+    }
+  }
+
+  .animate-title-underline {
+    animation: title-underline 6s ease-in-out infinite;
   }
 }
