@@ -9,6 +9,7 @@ import {
   Search,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { format } from "date-fns";
 import { useState } from "react";
 import { DataPagination } from "@/components/ui/data-pagination";
@@ -87,14 +88,7 @@ export default function EventsPage() {
 
         {/* Events Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="bg-card/30 border-white/5 animate-pulse">
-                <CardHeader className="h-48 bg-white/5" />
-                <CardContent className="h-32" />
-              </Card>
-            ))}
-          </div>
+          <LoadingSpinner message="Loading events..." />
         ) : filteredEvents.length === 0 ? (
           <Card className="bg-card/30 border-white/5 p-12 text-center">
             <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />

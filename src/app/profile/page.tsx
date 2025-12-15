@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trophy, Clock, Star, TrendingUp, Edit, Save, X } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
@@ -72,10 +73,7 @@ export default function ProfilePage() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen py-24 flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-16 w-16 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading profile...</p>
-        </div>
+        <LoadingSpinner size="lg" message="Loading profile..." />
       </div>
     );
   }

@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Folder } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Folder } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -125,9 +126,7 @@ export default function Rules() {
       </motion.div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <LoadingSpinner message="Loading rules..." />
       ) : visibleCategories.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No rules available at this time.</p>

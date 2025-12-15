@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Trophy, Medal, Award, TrendingUp, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataPagination } from "@/components/ui/data-pagination";
@@ -125,13 +126,7 @@ export default function LeaderboardPage() {
 
         {/* Leaderboard List */}
         {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(10)].map((_, i) => (
-              <Card key={i} className="bg-card/30 border-white/5 animate-pulse">
-                <CardContent className="p-6 h-20" />
-              </Card>
-            ))}
-          </div>
+          <LoadingSpinner message="Loading leaderboard..." />
         ) : filteredLeaderboard.length === 0 ? (
           <Card className="bg-card/30 border-white/5 p-12 text-center">
             <Trophy className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />

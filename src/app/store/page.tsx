@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DataPagination } from "@/components/ui/data-pagination";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useState } from "react";
 
 const ITEMS_PER_PAGE = 6;
@@ -32,7 +33,7 @@ export default function Store() {
   const [vipPage, setVipPage] = useState(1);
   const [moneyPage, setMoneyPage] = useState(1);
   const [vehiclePage, setVehiclePage] = useState(1);
-  const { data: storeItems = [] } = useQuery({
+  const { data: storeItems = [], isLoading } = useQuery({
     queryKey: ["store-items"],
     queryFn: async () => {
       const res = await fetch("/api/store");
@@ -121,7 +122,9 @@ export default function Store() {
         </TabsList>
 
         <TabsContent value="vip">
-          {vipItems.length === 0 ? (
+          {isLoading ? (
+            <LoadingSpinner message="Loading VIP packages..." />
+          ) : vipItems.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               No VIP packages available.
             </div>
@@ -256,7 +259,9 @@ export default function Store() {
             </motion.div>
 
             <div className="space-y-6">
-              {moneyItems.length === 0 ? (
+              {isLoading ? (
+                <LoadingSpinner color="text-green-600" message="Loading money packages..." />
+              ) : moneyItems.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No money packages available.
                 </div>
@@ -342,7 +347,9 @@ export default function Store() {
             </div>
           </div>
 
-          {vehicleItems.length === 0 ? (
+          {isLoading ? (
+            <LoadingSpinner color="text-secondary" message="Loading vehicles..." />
+          ) : vehicleItems.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               No vehicles available.
             </div>
