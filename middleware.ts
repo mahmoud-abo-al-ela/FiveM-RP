@@ -61,21 +61,29 @@ export async function middleware(request: NextRequest) {
     if (!error && authUser) user = authUser;
   }
 
-  // 4. Redirect unauthenticated users
+  // 4. Public pages (accessible without authentication)
+  const publicPages = [
+    "/",
+    "/events",
+    "/leaderboard",
+    "/store",
+    "/rules",
+    "/auth/signin",
+    "/auth/callback",
+    "/auth/error",
+    "/auth/admin",
+  ];
+
+  // 5. Redirect unauthenticated users (except for public pages)
   if (!user) {
-    if (
-      pathname.startsWith("/auth/signin") ||
-      pathname.startsWith("/auth/callback") ||
-      pathname.startsWith("/auth/error") ||
-      pathname.startsWith("/auth/admin")
-    ) {
-      return response; // allow auth pages
+    if (publicPages.some((page) => pathname === page || pathname.startsWith(page + "/"))) {
+      return response; // allow public pages
     }
 
     return NextResponse.redirect(new URL("/auth/signin", request.url));
   }
 
-  // 5. Fetch user profile from Supabase
+  // 6. Fetch user profile from Supabase
   let userProfile = null;
   try {
     const { data, error } = await supabase
@@ -91,18 +99,18 @@ export async function middleware(request: NextRequest) {
 
   const isAdmin = userProfile?.role === "admin";
 
-  // 6. Admin route protection
+  // 7. Admin route protection
   if ((pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) && !isAdmin) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 7. Redirect logged-in users away from signin page
+  // 8. Redirect logged-in users away from signin page
   if (pathname.startsWith("/auth/signin")) {
     if (isAdmin) return NextResponse.redirect(new URL("/admin", request.url));
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 8. Profile activation flow for regular users
+  // 9. Profile activation flow for regular users
   if (!isAdmin && userProfile) {
     const hasProfile = userProfile.display_name && userProfile.in_game_name;
 
