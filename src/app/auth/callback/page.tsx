@@ -44,8 +44,12 @@ export default function AuthCallbackPage() {
             const status = profileData.rejected ? "rejected" : "pending";
             router.push(`/auth/pending?status=${status}`);
           } else {
-            // Activated user - redirect to home
-            router.push("/");
+            // Activated user - redirect to home or admin dashboard
+            if (profileData.isAdmin || profileData.role === "admin") {
+              router.push("/admin");
+            } else {
+              router.push("/");
+            }
           }
         } catch (err) {
           console.error("Failed to sync user:", err);

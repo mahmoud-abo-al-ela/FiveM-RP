@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 export async function POST() {
   try {
     const supabase = await createClient();
     
+    // Verify user is authenticated using their session
     const {
       data: { user },
       error: authError,
@@ -14,6 +15,10 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Use service role client for DB operations to bypass RLS
+    // This is required for admin_users and safer for users table
+    const adminDb = createServiceRoleClient();
+
     // Extract Discord data from user metadata
     const metadata = user.user_metadata;
     const discordId = metadata?.provider_id || metadata?.sub;
@@ -21,11 +26,39 @@ export async function POST() {
     const discordAvatar = metadata?.avatar_url || metadata?.picture;
     const email = user.email;
 
-    // Upsert user data into custom users table
-    const { error: upsertError } = await supabase
+    // Check if user already exists
+    const { data: existingUser } = await adminDb
       .from("users")
-      .upsert(
-        {
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
+    if (existingUser) {
+      // Update only mutable fields for existing users
+      const { error: updateError } = await adminDb
+        .from("users")
+        .update({
+          discord_id: discordId,
+          discord_username: discordUsername,
+          discord_avatar: discordAvatar,
+          // We update email just in case it changed on Discord
+          email: email,
+          last_login: new Date().toISOString(),
+          // DO NOT update role, stats, or display_name (if we want to keep custom names)
+          // keeping display_name sync for now as it seemed intended, but definitely preserving role/stats
+        })
+        .eq("id", user.id);
+
+      if (updateError) {
+        console.error("User update error:", updateError);
+        // We log but proceed
+      }
+    } else {
+      // Check if this is the FIRST user ever (optional: make them admin?) - skipping for now as per instructions
+      // Insert new user with defaults
+      const { error: insertError } = await adminDb
+        .from("users")
+        .insert({
           id: user.id,
           discord_id: discordId,
           discord_username: discordUsername,
@@ -38,19 +71,15 @@ export async function POST() {
           level: 1,
           experience_points: 0,
           reputation_score: 0,
-        },
-        {
-          onConflict: "id",
-          ignoreDuplicates: false,
-        }
-      );
+        });
 
-    if (upsertError) {
-      console.error("User sync error:", upsertError);
-      return NextResponse.json(
-        { error: "Failed to sync user data", details: upsertError.message },
-        { status: 500 }
-      );
+      if (insertError) {
+        console.error("User insert error:", insertError);
+        return NextResponse.json(
+          { error: "Failed to create user", details: insertError.message },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({ success: true });

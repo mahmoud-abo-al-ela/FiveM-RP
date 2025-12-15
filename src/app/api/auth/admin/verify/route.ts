@@ -4,21 +4,19 @@ import { cookies } from "next/headers";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const adminSessionId = cookieStore.get("admin_session")?.value;
+    const supabase = createServiceRoleClient();
+    const { data: { session }, error: sessionError } = await (await import("@/lib/supabase/server")).createClient().then(client => client.auth.getSession());
 
-    if (!adminSessionId) {
+    if (sessionError || !session) {
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
-    const supabase = createServiceRoleClient();
-
-    // Verify admin session
+    // Verify admin session via users table role
     const { data: admin, error } = await supabase
-      .from("admin_users")
-      .select("id, username, email")
-      .eq("id", adminSessionId)
-      .eq("active", true)
+      .from("users")
+      .select("id")
+      .eq("id", session.user.id)
+      .eq("role", "admin")
       .single();
 
     if (error || !admin) {
@@ -27,7 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ 
       authenticated: true, 
-      admin: { username: admin.username } 
+      admin: { id: admin.id } 
     });
   } catch (error) {
     console.error("Admin verify error:", error);

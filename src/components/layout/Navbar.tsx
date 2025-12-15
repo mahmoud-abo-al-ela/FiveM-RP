@@ -23,38 +23,34 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, loading, signInWithDiscord, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminSession, setAdminSession] = useState<{ username: string } | null>(null);
   const [userProfile, setUserProfile] = useState<{ activated: boolean; display_name: string | null; in_game_name: string | null } | null>(null);
 
   useEffect(() => {
     async function checkAdmin() {
-      // Always check for admin session cookie first (on all pages)
-      try {
-        const res = await fetch("/api/auth/admin/verify");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.authenticated) {
-            setAdminSession({ username: data.admin.username });
-            setIsAdmin(true);
-            setUserProfile(null);
-            return;
-          }
-        }
-      } catch (error) {
-        // Silently fail if admin check fails
-        console.debug("Admin session check failed:", error);
-      }
-
-      // No admin session, reset admin state
-      setAdminSession(null);
-
-      // Check if regular user has admin role
+      // 1. Check if user is logged in
       if (!user) {
         setIsAdmin(false);
         setUserProfile(null);
         return;
       }
-      
+
+      // 2. Check for admin status via API (RBAC)
+      try {
+        const res = await fetch("/api/auth/admin/verify");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            setIsAdmin(true);
+            // Admins don't need the activation profile check strictly, 
+            // but we can still fetch it if we want extra data. 
+            // For now, if admin, we are good.
+          }
+        }
+      } catch (error) {
+        console.debug("Admin check failed:", error);
+      }
+
+      // 3. Fetch user profile for display names / activation status
       const supabase = createClient();
       const { data: profile } = await supabase
         .from("users")
@@ -62,7 +58,9 @@ export function Navbar() {
         .eq("id", user.id)
         .single();
       
-      setIsAdmin(profile?.role === "admin");
+      // Also fallback to role in users table if API check didn't set it (optional safety)
+      if (profile?.role === "admin") setIsAdmin(true);
+
       setUserProfile(profile ? {
         activated: profile.activated,
         display_name: profile.display_name,
@@ -90,11 +88,13 @@ export function Navbar() {
 
   const getLogoHref = () => {
     // If user is not logged in, go to home
-    if (!user || !userProfile) return "/";
+    if (!user) return "/";
     
     // If admin, go to home
     if (isAdmin) return "/";
     
+    if (!userProfile) return "/";
+
     // If user has no profile (no display_name or in_game_name), go to activate
     const hasProfile = userProfile.display_name && userProfile.in_game_name;
     if (!hasProfile) return "/auth/activate";
@@ -129,74 +129,50 @@ export function Navbar() {
             </Link>
           ))}
           
-          {loading && !adminSession ? (
+          {loading ? (
             <div className="ml-4 h-10 w-10 rounded-full bg-white/10 animate-pulse" />
-          ) : adminSession || user ? (
+          ) : user ? (
             <div className="ml-4 flex items-center gap-3">
             
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-2 ring-primary/50 hover:ring-primary transition-all">
                     <Avatar className="h-10 w-10">
-                      {adminSession ? (
-                        <>
-                          <AvatarFallback className="bg-primary text-white">
-                            <Shield className="h-5 w-5" />
-                          </AvatarFallback>
-                        </>
-                      ) : (
-                        <>
-                          <AvatarImage src={getDiscordAvatarUrl() || undefined} alt={user?.user_metadata?.full_name || user?.email || "User"} />
-                          <AvatarFallback className="bg-primary text-white">
-                            {(user?.user_metadata?.full_name || user?.email || "U").charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </>
-                      )}
+                      <AvatarImage src={getDiscordAvatarUrl() || undefined} alt={user?.user_metadata?.full_name || user?.email || "User"} />
+                      <AvatarFallback className="bg-primary text-white">
+                        {(user?.user_metadata?.full_name || user?.email || "U").charAt(0).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-card/95 backdrop-blur-md border-white/10" align="end">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      {adminSession ? (
-                        <>
-                          <p className="text-sm font-medium leading-none">{adminSession.username}</p>
-                          <p className="text-xs leading-none text-muted-foreground">Administrator</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name || user?.email}</p>
-                          <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                        </>
-                      )}
+                      <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name || user?.email}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {isAdmin ? "Administrator" : user?.email}
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/10" />
-                  {isAdmin ? (
+                  {isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="cursor-pointer">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         <span>Dashboard</span>
                       </Link>
                     </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem asChild>
-                      <Link href="/profile" className="cursor-pointer">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Profile</span>
-                      </Link>
-                    </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem 
-                    onClick={async () => {
-                      if (adminSession) {
-                        await fetch("/api/auth/admin/logout", { method: "POST" });
-                        window.location.href = "/auth/admin";
-                      } else {
-                        signOut();
-                      }
-                    }}
+                    onClick={() => signOut()}
                     className="cursor-pointer text-red-400 focus:text-red-400"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -245,62 +221,41 @@ export function Navbar() {
             </Link>
           ))}
           
-          {adminSession || user ? (
+          {user ? (
             <>
               <div className="flex items-center gap-3 px-4 py-2 border-t border-white/10 mt-2 pt-4">
                 <Avatar className="h-10 w-10">
-                  {adminSession ? (
-                    <AvatarFallback className="bg-primary text-white">
-                      <Shield className="h-5 w-5" />
-                    </AvatarFallback>
-                  ) : (
-                    <>
-                      <AvatarImage src={getDiscordAvatarUrl() || undefined} alt={user?.user_metadata?.full_name || user?.email || "User"} />
-                      <AvatarFallback className="bg-primary text-white">
-                        {(user?.user_metadata?.full_name || user?.email || "U").charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </>
-                  )}
+                  <AvatarImage src={getDiscordAvatarUrl() || undefined} alt={user?.user_metadata?.full_name || user?.email || "User"} />
+                  <AvatarFallback className="bg-primary text-white">
+                    {(user?.user_metadata?.full_name || user?.email || "U").charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  {adminSession ? (
-                    <>
-                      <p className="text-sm font-medium">{adminSession.username}</p>
-                      <p className="text-xs text-muted-foreground">Administrator</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium">{user?.user_metadata?.full_name || user?.email}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
-                    </>
-                  )}
+                  <p className="text-sm font-medium">{user?.user_metadata?.full_name || user?.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isAdmin ? "Administrator" : user?.email}
+                  </p>
                 </div>
               </div>
-              {isAdmin ? (
+              {isAdmin && (
                 <Link href="/admin" onClick={() => setIsOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     Dashboard
                   </Button>
                 </Link>
-              ) : (
-                <Link href="/profile" onClick={() => setIsOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Button>
-                </Link>
               )}
+              <Link href="/profile" onClick={() => setIsOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </Button>
+              </Link>
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-red-400 hover:text-red-400"
-                onClick={async () => {
-                  if (adminSession) {
-                    await fetch("/api/auth/admin/logout", { method: "POST" });
-                    window.location.href = "/auth/admin";
-                  } else {
-                    signOut();
-                  }
+                onClick={() => {
+                  signOut();
                   setIsOpen(false);
                 }}
               >

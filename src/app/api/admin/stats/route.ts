@@ -15,13 +15,15 @@ export async function GET() {
 
     const [
       totalUsersRes,
+      totalAdminsRes,
       activeUsersRes,
       pendingRes,
       storeItemsRes,
       availableItemsRes,
     ] = await Promise.all([
-      supabase.from("users").select("id", countOptions),
-      supabase.from("users").select("id", countOptions).eq("activated", true),
+      supabase.from("users").select("id", countOptions).eq("role", "user"),
+      supabase.from("users").select("id", countOptions).eq("role", "admin"),
+      supabase.from("users").select("id", countOptions).eq("activated", true).eq("role", "user"),
       supabase
         .from("users")
         .select("id", countOptions)
@@ -37,6 +39,7 @@ export async function GET() {
     // Handle any Supabase errors inside Promise.all
     const errors = [
       totalUsersRes.error,
+      totalAdminsRes.error,
       activeUsersRes.error,
       pendingRes.error,
       storeItemsRes.error,
@@ -49,6 +52,7 @@ export async function GET() {
 
     return NextResponse.json({
       totalUsers: totalUsersRes.count ?? 0,
+      totalAdmins: totalAdminsRes.count ?? 0,
       activeUsers: activeUsersRes.count ?? 0,
       pendingActivations: pendingRes.count ?? 0,
       storeItems: storeItemsRes.count ?? 0,

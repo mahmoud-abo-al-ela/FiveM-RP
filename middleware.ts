@@ -4,54 +4,41 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public pages (no login required)
-  const publicRoutes = [
-    "/",
-    "/auth/signin",
-    "/auth/callback",
-    "/auth/error",
-    "/auth/admin", // must always be open
-  ];
+  let response = NextResponse.next({
+    request: { headers: request.headers },
+  });
 
-  // Public API endpoints
+  // 1. Public API routes and assets (no auth required)
   const publicApiRoutes = [
     "/api/auth/activate",
     "/api/auth/sync-user",
     "/api/auth/check-profile",
     "/api/auth/callback",
     "/api/discord/interactions",
+    "/api/auth/admin/verify",
   ];
 
-  // Skip proxy for public API + static files
   if (
     publicApiRoutes.some((route) => pathname.startsWith(route)) ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/public") ||
-    pathname.startsWith("/api/auth/admin")
+    pathname.match(/\.(svg|png|jpg|jpeg|gif|webp)$/)
   ) {
-    return NextResponse.next();
+    return response;
   }
 
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
-
-  // Initialize Supabase server client
+  // 2. Initialize Supabase client with cookie support
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-
           response = NextResponse.next({ request });
-
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
@@ -60,117 +47,90 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  /* ----------------------------------------------------------------------------------------
-     ADMIN SESSION COOKIE (MUST BE FIRST PRIORITY)
-  ---------------------------------------------------------------------------------------- */
+  // 3. Detect auth cookie
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const projectId = supabaseUrl.match(/https:\/\/([^.]+)\./)?.[1];
+  const authCookieName = `sb-${projectId}-auth-token`;
+  const hasAuthCookie = request.cookies.getAll().some((c) =>
+    c.name.startsWith(authCookieName)
+  );
 
-  const adminSessionCookie = request.cookies.get("admin_session");
-
-  if (adminSessionCookie?.value) {
-    // Block admin from accessing any auth routes (signin, admin login, etc.)
-    if (pathname.startsWith("/auth")) {
-      return NextResponse.redirect(new URL("/admin", request.url));
-    }
-    
-    // Allow full access to /admin and /api/admin
-    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-      return response;
-    }
-    
-    // Allow admin to access other pages
-    return response;
+  let user = null;
+  if (hasAuthCookie) {
+    const { data: { user: authUser }, error } = await supabase.auth.getUser();
+    if (!error && authUser) user = authUser;
   }
 
-  // Always allow access to admin login page BEFORE user activation checks (only if no admin session)
-  if (pathname.startsWith("/auth/admin")) {
-    return response;
-  }
-
-  /* ----------------------------------------------------------------------------------------
-     AUTHENTICATION CHECK
-  ---------------------------------------------------------------------------------------- */
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // If user has NO auth session
-  if (!session) {
-    // Allow true public pages
-    if (publicRoutes.some((route) => pathname.startsWith(route))) {
-      return response;
+  // 4. Redirect unauthenticated users
+  if (!user) {
+    if (
+      pathname.startsWith("/auth/signin") ||
+      pathname.startsWith("/auth/callback") ||
+      pathname.startsWith("/auth/error") ||
+      pathname.startsWith("/auth/admin")
+    ) {
+      return response; // allow auth pages
     }
 
-    // Accessing /admin without admin cookie → send to admin login
-    if (pathname.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/auth/admin", request.url));
-    }
-
-    // Normal user → send to signin
     return NextResponse.redirect(new URL("/auth/signin", request.url));
   }
 
-  /* ----------------------------------------------------------------------------------------
-     USER IS AUTHENTICATED → DO NOT ALLOW SIGNIN OR ADMIN LOGIN
-  ---------------------------------------------------------------------------------------- */
+  // 5. Fetch user profile from Supabase
+  let userProfile = null;
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("role, display_name, in_game_name, activated, rejected_at")
+      .eq("id", user.id)
+      .single();
 
-  if (pathname.startsWith("/auth/signin") || pathname.startsWith("/auth/admin")) {
+    if (!error && data) userProfile = data;
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+  }
+
+  const isAdmin = userProfile?.role === "admin";
+
+  // 6. Admin route protection
+  if ((pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) && !isAdmin) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  /* ----------------------------------------------------------------------------------------
-     PROFILE & ACTIVATION LOGIC
-  ---------------------------------------------------------------------------------------- */
+  // 7. Redirect logged-in users away from signin page
+  if (pathname.startsWith("/auth/signin")) {
+    if (isAdmin) return NextResponse.redirect(new URL("/admin", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
-  try {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("display_name, in_game_name, activated, rejected_at, role")
-      .eq("id", session.user.id)
-      .single();
+  // 8. Profile activation flow for regular users
+  if (!isAdmin && userProfile) {
+    const hasProfile = userProfile.display_name && userProfile.in_game_name;
 
-    // ADMIN ROLE from Supabase users table
-    if (profile?.role === "admin") {
-      return response; // full access
-    }
-
-    const hasProfile =
-      profile?.display_name && profile?.in_game_name;
-
-    // User did NOT complete required profile → lock to /auth/activate
-    if (!hasProfile) {
-      if (pathname.startsWith("/auth/activate")) {
-        return response;
-      }
+    // Profile completion check
+    if (!hasProfile && !pathname.startsWith("/auth/activate")) {
       return NextResponse.redirect(new URL("/auth/activate", request.url));
     }
 
-    // Profile exists but not yet approved → lock to /auth/pending
-    if (!profile.activated) {
-      if (pathname.startsWith("/auth/pending")) {
-        return response;
+    // Activation check
+    if (!userProfile.activated) {
+      if (!pathname.startsWith("/auth/pending")) {
+        const status = userProfile.rejected_at ? "rejected" : "pending";
+        return NextResponse.redirect(
+          new URL(`/auth/pending?status=${status}`, request.url)
+        );
       }
-
-      const status = profile.rejected_at ? "rejected" : "pending";
-      return NextResponse.redirect(
-        new URL(`/auth/pending?status=${status}`, request.url)
-      );
     }
 
-    // Activated user → block them from auth pages
+    // Prevent activated users from accessing activation/pending pages
     if (
-      pathname.startsWith("/auth/pending") ||
-      pathname.startsWith("/auth/activate") ||
-      pathname.startsWith("/auth/signin")
+      userProfile.activated &&
+      (pathname.startsWith("/auth/activate") || pathname.startsWith("/auth/pending"))
     ) {
       return NextResponse.redirect(new URL("/", request.url));
     }
-
-    return response;
-  } catch (error) {
-    console.error("Proxy error:", error);
-    return response;
   }
+
+  return response;
 }
 
 export const config = {

@@ -16,7 +16,7 @@ export async function GET() {
     // Check if user has a profile
     const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select("id, display_name, in_game_name, activated, rejected_at")
+      .select("id, display_name, in_game_name, activated, rejected_at, role")
       .eq("id", user.id)
       .single();
 
@@ -27,13 +27,17 @@ export async function GET() {
       );
     }
 
+    const isAdmin = profile?.role === "admin";
+
     // User has profile if display_name and in_game_name are set
-    const hasProfile = profile && profile.display_name && profile.in_game_name;
+    const hasProfile = (profile && profile.display_name && profile.in_game_name) || isAdmin;
 
     return NextResponse.json({ 
       hasProfile: !!hasProfile,
-      activated: profile?.activated || false,
-      rejected: !!profile?.rejected_at
+      activated: (profile?.activated || false) || isAdmin,
+      rejected: !!profile?.rejected_at,
+      role: profile?.role,
+      isAdmin
     });
   } catch (error) {
     return NextResponse.json(

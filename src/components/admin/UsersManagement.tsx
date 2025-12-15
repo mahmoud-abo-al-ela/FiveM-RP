@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Ban, Search, Loader2 } from "lucide-react";
+import { Shield, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { UsersEmptyState } from "./empty-states";
@@ -23,12 +23,26 @@ interface User {
   activated: boolean;
   level: number;
   discord_avatar: string | null;
+  is_protected?: boolean;
 }
 
 export function UsersManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Fetch current user ID
+  useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/user");
+      if (!res.ok) throw new Error("Failed to fetch current user");
+      const data = await res.json();
+      setCurrentUserId(data.id);
+      return data;
+    },
+  });
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users", search],
@@ -49,36 +63,29 @@ export function UsersManagement() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, role }),
       });
-      if (!res.ok) throw new Error("Failed to update role");
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to update role");
+      }
+      
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       toast.success("User role updated");
     },
-    onError: () => {
-      toast.error("Failed to update user role");
+    onError: (error: Error) => {
+      if (error.message === "Cannot modify protected admin") {
+        toast.error("This admin is protected and cannot be modified");
+      } else {
+        toast.error("Failed to update user role");
+      }
     },
   });
 
-  const toggleActivationMutation = useMutation({
-    mutationFn: async ({ userId, activated }: { userId: string; activated: boolean }) => {
-      const res = await fetch("/api/admin/users", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, activated }),
-      });
-      if (!res.ok) throw new Error("Failed to update activation");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("User activation updated");
-    },
-    onError: () => {
-      toast.error("Failed to update user activation");
-    },
-  });
+
 
   return (
     <Card>
@@ -115,7 +122,7 @@ export function UsersManagement() {
                 .map((user: User) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <Avatar>
@@ -124,17 +131,49 @@ export function UsersManagement() {
                       {user.display_name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <div className="font-semibold">{user.display_name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {user.in_game_name}
-                    </div>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant="outline">
-                        Level {user.level}
+                      <div>
+                        <div className="flex gap-2">
+
+                        <div className="font-semibold">{user.display_name}</div>
+                        <Badge 
+                        variant={user.role === "admin" ? "default" : "secondary"}
+                        className={user.role === "admin" ? "bg-primary" : ""}
+                      >
+                        {user.role === "admin" ? <Shield className="h-3 w-3 mr-1" /> : null}
+                        {user.role || "user"}
                       </Badge>
+                        </div>
+                    
+                    <div className="flex gap-2 mt-1">
+                      {user.role !== "admin" ? <div className="text-sm text-muted-foreground">
+                      {user.in_game_name}
+                          </div> : null}
+                          {user.role !== "admin" ? <Badge variant="outline">
+                        Level {user.level}
+                      </Badge> : null}
+                      
                     </div>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={user.role || "user"}
+                    onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
+                    disabled={updateRoleMutation.isPending || user.id === currentUserId}
+                  >
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {user.id === currentUserId && (
+                    <span className="text-xs text-muted-foreground">
+                      (You)
+                    </span>
+                  )}
                 </div>
               </div>
                 ))}

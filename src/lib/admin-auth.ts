@@ -1,21 +1,24 @@
-import { cookies } from "next/headers";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function verifyAdminSession() {
-  const cookieStore = await cookies();
-  const adminSessionId = cookieStore.get("admin_session")?.value;
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (!adminSessionId) {
+  if (!session) {
     return null;
   }
 
-  const supabase = createServiceRoleClient();
   const { data: admin } = await supabase
-    .from("admin_users")
+    .from("users")
     .select("*")
-    .eq("id", adminSessionId)
-    .eq("active", true)
+    .eq("id", session.user.id)
+    .eq("role", "admin")
     .single();
 
   return admin;
+}
+
+export async function isAdminUser(): Promise<boolean> {
+  const admin = await verifyAdminSession();
+  return admin !== null;
 }
