@@ -13,6 +13,12 @@ export async function middleware(request: NextRequest) {
     "/api/auth/callback",
     "/api/discord/interactions",
     "/api/auth/admin/verify",
+    // Guest-accessible API routes
+    "/api/events",
+    "/api/leaderboard",
+    "/api/rules",
+    "/api/store",
+    "/api/server-status",
   ];
 
   if (
