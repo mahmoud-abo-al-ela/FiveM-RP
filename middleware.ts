@@ -56,7 +56,7 @@ export async function middleware(request: NextRequest) {
     if (!error && authUser) user = authUser;
   }
 
-  // 4. Redirect unauthenticated users to signin
+  // 4. Public pages accessible to guests (no auth required)
   const publicPages = [
     "/auth/signin",
     "/auth/callback",
@@ -64,9 +64,26 @@ export async function middleware(request: NextRequest) {
     "/auth/admin",
   ];
 
+  const guestAccessiblePages = [
+    "/",
+    "/events",
+    "/leaderboard",
+    "/rules",
+    "/store",
+  ];
+
   if (!user) {
+    // Allow auth pages
     if (publicPages.some((page) => pathname === page || pathname.startsWith(page + "/"))) {
-      return response; // allow only auth pages
+      return response;
+    }
+    // Allow guest-accessible public pages
+    if (
+      guestAccessiblePages.some(
+        (page) => pathname === page || (page !== "/" && pathname.startsWith(page + "/"))
+      )
+    ) {
+      return response;
     }
     return NextResponse.redirect(new URL("/auth/signin", request.url));
   }
