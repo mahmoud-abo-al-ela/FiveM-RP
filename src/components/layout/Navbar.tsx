@@ -34,23 +34,7 @@ export function Navbar() {
         return;
       }
 
-      // 2. Check for admin status via API (RBAC)
-      try {
-        const res = await fetch("/api/auth/admin/verify");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.authenticated) {
-            setIsAdmin(true);
-            // Admins don't need the activation profile check strictly, 
-            // but we can still fetch it if we want extra data. 
-            // For now, if admin, we are good.
-          }
-        }
-      } catch (error) {
-        console.debug("Admin check failed:", error);
-      }
-
-      // 3. Fetch user profile for display names / activation status
+      // 2. Fetch user profile for display names / activation status / role
       const supabase = createClient();
       const { data: profile } = await supabase
         .from("users")
@@ -58,14 +42,19 @@ export function Navbar() {
         .eq("id", user.id)
         .single();
       
-      // Also fallback to role in users table if API check didn't set it (optional safety)
-      if (profile?.role === "admin") setIsAdmin(true);
+      // Check if user is admin from profile
+      if (profile?.role === "admin") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
 
       setUserProfile(profile ? {
         activated: profile.activated,
         display_name: profile.display_name,
         in_game_name: profile.in_game_name
       } : null);
+
     }
     
     checkAdmin();
