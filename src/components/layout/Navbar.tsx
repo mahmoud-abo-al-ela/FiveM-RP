@@ -60,13 +60,25 @@ export function Navbar() {
     checkAdmin();
   }, [user, pathname]);
 
-  const navItems = [
+  const allNavItems = [
     { href: "/", label: "Home", icon: Terminal },
     { href: "/events", label: "Events", icon: Calendar },
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/rules", label: "Rules", icon: Shield },
     { href: "/store", label: "Store", icon: ShoppingCart },
   ];
+
+  // Check if user can access public pages (must have profile AND be activated, or be admin)
+  const canAccessPublicPages = () => {
+    if (!user) return true; // Non-logged in users can see nav (will be redirected by middleware)
+    if (isAdmin) return true;
+    if (!userProfile) return false;
+    const hasProfile = userProfile.display_name && userProfile.in_game_name;
+    return hasProfile && userProfile.activated;
+  };
+
+  // Filter nav items based on user status
+  const navItems = canAccessPublicPages() ? allNavItems : [];
 
   const getDiscordAvatarUrl = () => {
     if (!user) return null;
@@ -152,12 +164,14 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {canAccessPublicPages() && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem 
@@ -234,12 +248,14 @@ export function Navbar() {
                   </Button>
                 </Link>
               )}
-              <Link href="/profile" onClick={() => setIsOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start">
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </Button>
-              </Link>
+              {canAccessPublicPages() && (
+                <Link href="/profile" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Button>
+                </Link>
+              )}
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-red-400 hover:text-red-400"

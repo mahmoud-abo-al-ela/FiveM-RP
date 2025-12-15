@@ -3,10 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
+  let response = NextResponse.next({ request: { headers: request.headers } });
 
   // 1. Public API routes and assets (no auth required)
   const publicApiRoutes = [
@@ -35,9 +32,7 @@ export async function middleware(request: NextRequest) {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
@@ -61,29 +56,22 @@ export async function middleware(request: NextRequest) {
     if (!error && authUser) user = authUser;
   }
 
-  // 4. Public pages (accessible without authentication)
+  // 4. Redirect unauthenticated users to signin
   const publicPages = [
-    "/",
-    "/events",
-    "/leaderboard",
-    "/store",
-    "/rules",
     "/auth/signin",
     "/auth/callback",
     "/auth/error",
     "/auth/admin",
   ];
 
-  // 5. Redirect unauthenticated users (except for public pages)
   if (!user) {
     if (publicPages.some((page) => pathname === page || pathname.startsWith(page + "/"))) {
-      return response; // allow public pages
+      return response; // allow only auth pages
     }
-
     return NextResponse.redirect(new URL("/auth/signin", request.url));
   }
 
-  // 6. Fetch user profile from Supabase
+  // 5. Fetch user profile from Supabase
   let userProfile = null;
   try {
     const { data, error } = await supabase
@@ -99,43 +87,39 @@ export async function middleware(request: NextRequest) {
 
   const isAdmin = userProfile?.role === "admin";
 
-  // 7. Admin route protection
+  // 6. Admin route protection
   if ((pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) && !isAdmin) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 8. Redirect logged-in users away from signin page
-  if (pathname.startsWith("/auth/signin")) {
-    if (isAdmin) return NextResponse.redirect(new URL("/admin", request.url));
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  // 9. Profile activation flow for regular users
+  // 7. Profile and activation flow for regular users
   if (!isAdmin && userProfile) {
     const hasProfile = userProfile.display_name && userProfile.in_game_name;
 
-    // Profile completion check
-    if (!hasProfile && !pathname.startsWith("/auth/activate")) {
+    // User has NO profile: can only access /auth/activate
+    if (!hasProfile && pathname !== "/auth/activate") {
       return NextResponse.redirect(new URL("/auth/activate", request.url));
     }
 
-    // Activation check
-    if (!userProfile.activated) {
-      if (!pathname.startsWith("/auth/pending")) {
-        const status = userProfile.rejected_at ? "rejected" : "pending";
-        return NextResponse.redirect(
-          new URL(`/auth/pending?status=${status}`, request.url)
-        );
-      }
+    // User has profile but NOT activated: can only access /auth/pending
+    if (hasProfile && !userProfile.activated && pathname !== "/auth/pending") {
+      const status = userProfile.rejected_at ? "rejected" : "pending";
+      return NextResponse.redirect(new URL(`/auth/pending?status=${status}`, request.url));
     }
 
-    // Prevent activated users from accessing activation/pending pages
+    // Activated users: block access to /auth/activate and /auth/pending
     if (
       userProfile.activated &&
-      (pathname.startsWith("/auth/activate") || pathname.startsWith("/auth/pending"))
+      (pathname === "/auth/activate" || pathname.startsWith("/auth/pending"))
     ) {
       return NextResponse.redirect(new URL("/", request.url));
     }
+  }
+
+  // 8. Redirect logged-in users away from signin
+  if (pathname.startsWith("/auth/signin")) {
+    if (isAdmin) return NextResponse.redirect(new URL("/admin", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return response;
