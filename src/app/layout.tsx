@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "@/components/ui/sonner";
 import { BackToTop } from "@/components/layout/BackToTop";
 import { LoadingProvider } from "@/components/layout/LoadingScreen";
+import MicrosoftClarity from "@/components/analytics/MicrosoftClarity";
 
 export const metadata: Metadata = {
   title: "LEGACY RP - FiveM Roleplay Server",
@@ -28,6 +29,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const projectId = "us6k68pztu";
   return (
     <html lang="en">
       <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary selection:text-white">
@@ -37,6 +39,7 @@ export default function RootLayout({
             <Navbar />
             <main>{children}</main>
             <Toaster />
+            <MicrosoftClarity projectId={projectId} />
             <BackToTop />
           </LoadingProvider>
         </Providers>
