@@ -48,7 +48,7 @@ export default function SignInPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
-              onClick={signInWithDiscord}
+              onClick={() => signInWithDiscord()}
               className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-6 text-lg transition-all duration-300 shadow-[0_0_20px_rgba(88,101,242,0.4)]"
               size="lg"
             >
