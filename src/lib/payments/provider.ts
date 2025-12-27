@@ -9,7 +9,6 @@ export interface PaymentProviderInfo {
   name: string;
   description: string;
   icon: string;
-  enabled: boolean;
   currency: 'USD' | 'EGP';
   conversionRate?: number;
 }
@@ -62,7 +61,6 @@ export function getAvailablePaymentProviders(isEgypt: boolean): PaymentProviderI
         name: 'InstaPay',
         description: 'Transfer via InstaPay',
         icon: '💳',
-        enabled: true, // Always enabled for Egyptian users if they want to use it
         currency: 'EGP',
         conversionRate: 30.5,
       },
@@ -71,7 +69,6 @@ export function getAvailablePaymentProviders(isEgypt: boolean): PaymentProviderI
         name: 'Mobile Wallet',
         description: 'Vodafone Cash',
         icon: '📱',
-        enabled: true,
         currency: 'EGP',
         conversionRate: 30.5,
       },
@@ -84,7 +81,6 @@ export function getAvailablePaymentProviders(isEgypt: boolean): PaymentProviderI
         name: 'Credit/Debit Card',
         description: 'Pay securely with Stripe',
         icon: '💳',
-        enabled: !!process.env.NEXT_PUBLIC_STRIPE_ENABLED,
         currency: 'USD',
       },
     ];

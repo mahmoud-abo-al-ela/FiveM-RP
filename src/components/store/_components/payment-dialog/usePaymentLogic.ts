@@ -72,9 +72,9 @@ export function usePaymentLogic({ open, onOpenChange, item }: UsePaymentLogicPro
       const location = await detectUserLocation();
       setIsEgypt(location.isEgypt);
       const availableProviders = getAvailablePaymentProviders(location.isEgypt);
-      setProviders(availableProviders.filter(p => p.enabled));
+      setProviders(availableProviders);
       
-      if (availableProviders.length > 0 && availableProviders[0].enabled) {
+      if (availableProviders.length > 0) {
         setSelectedProvider(availableProviders[0].id);
       }
 
@@ -84,7 +84,7 @@ export function usePaymentLogic({ open, onOpenChange, item }: UsePaymentLogicPro
     } catch (err) {
       console.error("Location detection failed:", err);
       const globalProviders = getAvailablePaymentProviders(false);
-      setProviders(globalProviders.filter(p => p.enabled));
+      setProviders(globalProviders);
       if (globalProviders.length > 0) {
         setSelectedProvider(globalProviders[0].id);
       }
