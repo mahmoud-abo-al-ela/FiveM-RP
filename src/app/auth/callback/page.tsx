@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -44,9 +46,11 @@ export default function AuthCallbackPage() {
             const status = profileData.rejected ? "rejected" : "pending";
             router.push(`/auth/pending?status=${status}`);
           } else {
-            // Activated user - redirect to home or admin dashboard
+            // Activated user - redirect to intended destination, admin dashboard, or home
             if (profileData.isAdmin || profileData.role === "admin") {
               router.push("/admin");
+            } else if (next) {
+              router.push(next);
             } else {
               router.push("/");
             }
@@ -56,12 +60,12 @@ export default function AuthCallbackPage() {
           router.push("/auth/activate");
         }
       } else {
-        router.push("/");
+        router.push(next || "/");
       }
     };
 
     handleCallback();
-  }, [router]);
+  }, [router, next]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

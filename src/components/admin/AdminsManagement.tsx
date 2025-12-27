@@ -3,34 +3,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Shield, UserX, Search, Loader2, Lock } from "lucide-react";
+import { Shield, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AdminRow, AdminUser } from "./_components/admins/AdminRow";
+import { RevokeAdminDialog } from "./_components/admins/RevokeAdminDialog";
 
-interface AdminUser {
-  id: string;
-  display_name: string;
-  in_game_name: string;
-  role: string;
-  activated: boolean;
-  level: number;
-  discord_avatar: string | null;
-  created_at: string;
-  is_protected?: boolean;
-}
+
 
 export function AdminsManagement() {
   const queryClient = useQueryClient();
@@ -133,71 +114,25 @@ export function AdminsManagement() {
           ) : (
             <div className="space-y-4">
               {admins.map((admin: AdminUser) => (
-                <div
+                <AdminRow
                   key={admin.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={admin.discord_avatar || undefined} />
-                      <AvatarFallback>
-                        {admin.display_name?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-semibold flex items-center gap-2">
-                        {admin.display_name}
-                        <Badge variant="default" className="bg-primary">
-                          <Shield className="h-3 w-3 mr-1" />
-                          Admin
-                        </Badge>
-                        {admin.is_protected && (
-                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/50">
-                            <Lock className="h-3 w-3 mr-1" />
-                            Protected
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleRevokeClick(admin)}
-                    disabled={revokeAdminMutation.isPending || admin.id === currentUserId || admin.is_protected}
-                    title={admin.is_protected ? "Protected admins cannot be modified" : admin.id === currentUserId ? "You cannot revoke your own admin access" : "Revoke admin access"}
-                  >
-                    <UserX className="h-4 w-4 mr-2" />
-                    {admin.id === currentUserId ? "You" : admin.is_protected ? "Protected" : "Revoke Admin"}
-                  </Button>
-                </div>
+                  admin={admin}
+                  currentUserId={currentUserId}
+                  onRevoke={handleRevokeClick}
+                  isRevoking={revokeAdminMutation.isPending}
+                />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Revoke Admin Access?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to revoke admin access for{" "}
-              <span className="font-semibold">{selectedUser?.display_name}</span>? 
-              They will be demoted to a regular user and lose all admin privileges.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmRevoke}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Revoke Admin
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RevokeAdminDialog
+        open={isRevokeDialogOpen}
+        onOpenChange={setIsRevokeDialogOpen}
+        admin={selectedUser}
+        onConfirm={handleConfirmRevoke}
+      />
     </>
   );
 }

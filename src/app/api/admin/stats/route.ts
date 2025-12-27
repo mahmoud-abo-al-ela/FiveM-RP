@@ -20,6 +20,7 @@ export async function GET() {
       pendingRes,
       storeItemsRes,
       availableItemsRes,
+      pendingPaymentsRes,
     ] = await Promise.all([
       supabase.from("users").select("id", countOptions).eq("role", "user"),
       supabase.from("users").select("id", countOptions).eq("role", "admin"),
@@ -34,6 +35,7 @@ export async function GET() {
         .not("bio", "is", null),
       supabase.from("store_items").select("id", countOptions),
       supabase.from("store_items").select("id", countOptions).eq("available", true),
+      supabase.from("payment_requests").select("id", countOptions).eq("status", "pending"),
     ]);
 
     // Handle any Supabase errors inside Promise.all
@@ -44,6 +46,7 @@ export async function GET() {
       pendingRes.error,
       storeItemsRes.error,
       availableItemsRes.error,
+      pendingPaymentsRes.error,
     ].filter(Boolean);
 
     if (errors.length > 0) {
@@ -57,6 +60,7 @@ export async function GET() {
       pendingActivations: pendingRes.count ?? 0,
       storeItems: storeItemsRes.count ?? 0,
       availableItems: availableItemsRes.count ?? 0,
+      pendingPayments: pendingPaymentsRes.count ?? 0,
     });
   } catch (error) {
     console.error("Error fetching admin stats:", error);

@@ -59,22 +59,7 @@ export function HeroSection({ serverStatus }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
           className="flex flex-col items-center gap-6"
-        >
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, type: "spring" }}
-          >
-            <Badge variant="outline" className="border-primary text-primary px-4 py-1 text-sm tracking-widest uppercase bg-primary/10 backdrop-blur-md">
-              <motion.span
-                animate={{ opacity: [1, 0.5, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                Season 2 Now Live
-              </motion.span>
-            </Badge>
-          </motion.div>
-          
+        >    
           <motion.h1 
             className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase mb-4"
             initial={{ opacity: 0, y: 20 }}
@@ -182,11 +167,6 @@ export function HeroSection({ serverStatus }: HeroSectionProps) {
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
               <span data-testid="text-player-count">{serverStatus?.currentPlayers || 0} / {serverStatus?.maxPlayers || 200} Players</span>
-            </div>
-            <div className="h-4 w-[1px] bg-white/10" />
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-secondary" />
-              <span data-testid="text-ping">{serverStatus?.ping || 0}ms Ping</span>
             </div>
           </motion.div>
         </motion.div>

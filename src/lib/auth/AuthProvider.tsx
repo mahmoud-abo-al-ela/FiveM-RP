@@ -8,7 +8,7 @@ type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithDiscord: () => Promise<void>;
+  signInWithDiscord: (nextPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -16,7 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
-  signInWithDiscord: async () => {},
+  signInWithDiscord: async (nextPath?: string) => {},
   signOut: async () => {},
 });
 
@@ -65,16 +65,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  const signInWithDiscord = async () => {
+  const signInWithDiscord = async (nextPath?: string) => {
+    let callbackUrl = `${window.location.origin}/auth/callback`;
+    if (nextPath) {
+      callbackUrl += `?next=${encodeURIComponent(nextPath)}`;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "discord",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
 
     if (error) {
-      // Error signing in with Discord
+      console.error("Error signing in with Discord:", error);
     }
   };
 

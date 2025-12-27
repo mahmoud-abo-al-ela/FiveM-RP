@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ShoppingBag, Calendar, Shield, Activity, UserCog, BookOpen, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Users, ShoppingBag, Calendar, Shield, Activity, UserCog, BookOpen, ShieldCheck, CreditCard, type LucideIcon } from "lucide-react";
 import { ActivationQueue } from "@/components/admin/ActivationQueue";
 import { UsersManagement } from "@/components/admin/UsersManagement";
 import { StoreManagement } from "@/components/admin/StoreManagement";
@@ -13,6 +13,7 @@ import { EventsManagement } from "@/components/admin/EventsManagement";
 import { ServerManagement } from "@/components/admin/ServerManagement";
 import { AdminsManagement } from "@/components/admin/AdminsManagement";
 import { RulesManagement } from "@/components/admin/RulesManagement";
+import { PaymentRequests } from "@/components/admin/PaymentRequests";
 import Loading from "../loading";
 
 interface StatCard {
@@ -31,6 +32,7 @@ interface Tab {
 
 const TABS: Tab[] = [
   { value: "activations", label: "Activations", icon: Shield, component: ActivationQueue },
+  { value: "payments", label: "Payments", icon: CreditCard, component: PaymentRequests },
   { value: "users", label: "Users", icon: Users, component: UsersManagement },
   { value: "admins", label: "Admins", icon: UserCog, component: AdminsManagement },
   { value: "events", label: "Events", icon: Calendar, component: EventsManagement },
@@ -75,10 +77,10 @@ export default function AdminDashboardClient() {
       subtitle: "Awaiting approval",
     },
     {
-      title: "Store Items",
-      icon: ShoppingBag,
-      value: stats?.storeItems ?? 0,
-      subtitle: `${stats?.availableItems ?? 0} available`,
+      title: "Pending Payments",
+      icon: CreditCard,
+      value: stats?.pendingPayments || 0,
+      subtitle: "Manual transfers",
     },
   ], [stats]);
 
