@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import { BackToTop } from "@/components/layout/BackToTop";
 import { LoadingProvider } from "@/components/layout/LoadingScreen";
@@ -32,12 +33,13 @@ export default function RootLayout({
   const projectId = "us6k68pztu";
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary selection:text-white">
+      <body className="min-h-screen flex flex-col bg-background font-sans text-foreground antialiased selection:bg-primary selection:text-white">
         <Providers>
           <LoadingProvider>
             <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none z-50"></div>
             <Navbar />
-            <main>{children}</main>
+            <main className="flex-1">{children}</main>
+            <Footer />
             <Toaster />
             <MicrosoftClarity projectId={projectId} />
             <BackToTop />

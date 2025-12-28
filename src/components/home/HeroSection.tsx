@@ -2,10 +2,8 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Shield, Users, Activity, ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { useRef } from "react";
+import { Users, ChevronDown, MessageCircle, Zap } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
 
 interface HeroSectionProps {
   serverStatus?: {
@@ -16,6 +14,36 @@ interface HeroSectionProps {
   };
 }
 
+// Matrix rain character component
+const MatrixChar = ({ delay, x }: { delay: number; x: number }) => {
+  const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
+  const [char, setChar] = useState(chars[Math.floor(Math.random() * chars.length)]);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setChar(chars[Math.floor(Math.random() * chars.length)]);
+    }, 100 + Math.random() * 200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.span
+      className="absolute text-primary/30 font-mono text-sm pointer-events-none"
+      style={{ left: `${x}%` }}
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: "100vh", opacity: [0, 1, 1, 0] }}
+      transition={{
+        duration: 4 + Math.random() * 4,
+        delay,
+        repeat: Infinity,
+        ease: "linear",
+      }}
+    >
+      {char}
+    </motion.span>
+  );
+};
+
 export function HeroSection({ serverStatus }: HeroSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -25,33 +53,103 @@ export function HeroSection({ serverStatus }: HeroSectionProps) {
   
   const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const contentY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const contentScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.8]);
+
+  // Typewriter effect for the static part
+  const staticText = "Start Your ";
+  const [displayedText, setDisplayedText] = useState("");
+  const [isTypingDone, setIsTypingDone] = useState(false);
+
+  // Animated cycling words (starts after typing is done)
+  const words = ["Journey", "Adventure", "Story", "Legacy"];
+  const [currentWord, setCurrentWord] = useState(0);
+  const [displayedWord, setDisplayedWord] = useState("");
+  const [isWordDeleting, setIsWordDeleting] = useState(false);
+
+  // Type out the static text first
+  useEffect(() => {
+    let index = 0;
+    const timer = setInterval(() => {
+      if (index <= staticText.length) {
+        setDisplayedText(staticText.slice(0, index));
+        index++;
+      } else {
+        clearInterval(timer);
+        setIsTypingDone(true);
+      }
+    }, 60);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Type and cycle through words after static text is done
+  useEffect(() => {
+    if (!isTypingDone) return;
+
+    const currentWordText = words[currentWord];
+    
+    if (!isWordDeleting) {
+      // Typing the word
+      if (displayedWord.length < currentWordText.length) {
+        const timer = setTimeout(() => {
+          setDisplayedWord(currentWordText.slice(0, displayedWord.length + 1));
+        }, 70);
+        return () => clearTimeout(timer);
+      } else {
+        // Word fully typed, wait then start deleting
+        const timer = setTimeout(() => {
+          setIsWordDeleting(true);
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      // Deleting the word
+      if (displayedWord.length > 0) {
+        const timer = setTimeout(() => {
+          setDisplayedWord(displayedWord.slice(0, -1));
+        }, 40);
+        return () => clearTimeout(timer);
+      } else {
+        // Word fully deleted, move to next word
+        setIsWordDeleting(false);
+        setCurrentWord((prev) => (prev + 1) % words.length);
+      }
+    }
+  }, [isTypingDone, displayedWord, currentWord, isWordDeleting, words]);
 
   return (
-    <section ref={containerRef} className="relative h-screen flex items-center justify-center overflow-hidden">
-      {/* Floating Particles */}
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 bg-primary/30 rounded-full z-10"
-          initial={{
-            x: typeof window !== 'undefined' ? Math.random() * window.innerWidth : 0,
-            y: typeof window !== 'undefined' ? Math.random() * window.innerHeight : 0,
-          }}
-          animate={{
-            y: typeof window !== 'undefined' ? [null, Math.random() * window.innerHeight] : 0,
-            x: typeof window !== 'undefined' ? [null, Math.random() * window.innerWidth] : 0,
-          }}
-          transition={{
-            duration: Math.random() * 10 + 10,
-            repeat: Infinity,
-            repeatType: "reverse",
-            ease: "linear"
-          }}
+    <section 
+      ref={containerRef} 
+      className="relative h-screen flex items-center justify-center overflow-hidden"
+    >
+      {/* Matrix Rain Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {[...Array(30)].map((_, i) => (
+          <MatrixChar key={i} delay={i * 0.3} x={Math.random() * 100} />
+        ))}
+      </div>
+
+
+      {/* Electric Arc Lines */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none z-5" style={{ opacity: 0.1 }}>
+        <motion.path
+          d="M0,200 Q400,100 800,200 T1600,200"
+          stroke="url(#gradient1)"
+          strokeWidth="2"
+          fill="none"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: [0, 1, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
-      ))}
+        <defs>
+          <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="hsl(280, 100%, 60%)" />
+            <stop offset="100%" stopColor="hsl(180, 100%, 50%)" />
+          </linearGradient>
+        </defs>
+      </svg>
 
       <motion.div 
-        style={{ opacity: contentOpacity, y: contentY }}
+        style={{ opacity: contentOpacity, y: contentY, scale: contentScale }}
         className="container relative z-20 text-center px-4"
       >
         <motion.div
@@ -59,126 +157,120 @@ export function HeroSection({ serverStatus }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
           className="flex flex-col items-center gap-6"
-        >    
-          <motion.h1 
-            className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-          >
-            Legacy{" "}
-            <motion.span 
-              className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary text-glow inline-block"
-              animate={{
-                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              style={{
-                backgroundSize: "200% 200%"
-              }}
+        >
+          {/* Typewriter Title */}
+          <motion.div className="relative">
+            <motion.h1 
+              className="text-4xl md:text-6xl lg:text-7xl font-black text-white tracking-tighter uppercase mb-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
             >
-              RP
-            </motion.span>
-          </motion.h1>
-          
-          <motion.p 
-            className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto font-light leading-relaxed"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-          >
-            Experience the next generation of FiveM roleplay. 
-            Custom framework, player-driven economy, and infinite possibilities.
-          </motion.p>
+              {displayedText}
+              {isTypingDone && (
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary" style={{ backgroundSize: "200% 200%" }}>
+                  {displayedWord}
+                </span>
+              )}
+              {/* Blinking cursor */}
+              <motion.span
+                className="text-primary"
+                animate={{ opacity: [1, 0] }}
+                transition={{ duration: 0.5, repeat: Infinity }}
+              >
+                |
+              </motion.span>
+            </motion.h1>
+            
+            {/* Animated underline - appears after first word is typed */}
+            <motion.div
+              className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ 
+                width: isTypingDone ? "60%" : 0, 
+                opacity: isTypingDone ? 1 : 0 
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </motion.div>
 
+          {/* Buttons */}
           <motion.div 
             className="flex flex-col sm:flex-row gap-4 mt-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7 }}
           >
-            <motion.div
-              whileHover={{ scale: 1.05, y: -5 }}
-              whileTap={{ scale: 0.95 }}
+            <Button 
+              data-testid="button-connect"
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg rounded-none clip-path-slant"
             >
+              <Zap className="mr-2 h-5 w-5" />
+              <span className="font-bold tracking-wider">Connect Now</span>
+            </Button>
+            
+            <a href="https://discord.gg/vhCDeprYcV" target="_blank" rel="noopener noreferrer">
               <Button 
-                data-testid="button-connect"
+                data-testid="button-discord"
                 size="lg" 
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg rounded-none clip-path-slant shadow-[0_0_30px_rgba(168,85,247,0.5)] relative overflow-hidden group"
+                variant="outline" 
+                className="border-secondary text-secondary hover:bg-secondary/10 px-8 py-6 text-lg rounded-none clip-path-slant"
               >
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  initial={{ x: "-100%" }}
-                  whileHover={{ x: "100%" }}
-                  transition={{ duration: 0.6 }}
-                />
-                <ExternalLink className="mr-2 h-5 w-5 relative z-10" />
-                <span className="relative z-10">Connect Now</span>
+                <MessageCircle className="mr-2 h-5 w-5" />
+                <span className="font-bold tracking-wider">Join Discord</span>
               </Button>
-            </motion.div>
-            <Link href="/rules">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -5 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button 
-                  data-testid="button-rules"
-                  size="lg" 
-                  variant="outline" 
-                  className="border-secondary text-secondary hover:bg-secondary/10 px-8 py-6 text-lg rounded-none clip-path-slant relative overflow-hidden group"
-                >
-                  <motion.div
-                    className="absolute inset-0 bg-secondary/10"
-                    initial={{ scale: 0 }}
-                    whileHover={{ scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                  <Shield className="mr-2 h-5 w-5 relative z-10" />
-                  <span className="relative z-10">View Rules</span>
-                </Button>
-              </motion.div>
-            </Link>
+            </a>
           </motion.div>
 
-          <motion.div 
-            className="mt-12 flex items-center gap-8 text-sm text-gray-400 bg-black/40 p-4 rounded-full backdrop-blur-sm border border-white/5"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.9 }}
-          >
+          {/* Server Status */}
+          <div className="mt-12 flex items-center gap-8 text-sm text-gray-400 bg-black/60 p-4 rounded-full backdrop-blur-md border border-white/10">
             <div className="flex items-center gap-2">
-              <motion.div 
+              <div 
                 data-testid="status-indicator"
-                className={`h-2 w-2 rounded-full ${serverStatus?.online ? 'bg-green-500' : 'bg-red-500'}`}
-                animate={{
-                  boxShadow: serverStatus?.online 
-                    ? ["0 0 10px rgba(34,197,94,0.8)", "0 0 20px rgba(34,197,94,0.4)", "0 0 10px rgba(34,197,94,0.8)"]
-                    : ["0 0 10px rgba(239,68,68,0.8)", "0 0 20px rgba(239,68,68,0.4)", "0 0 10px rgba(239,68,68,0.8)"]
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
+                className={`h-3 w-3 rounded-full ${serverStatus?.online ? 'bg-green-500' : 'bg-red-500'}`}
               />
-              <span>{serverStatus?.online ? 'Online' : 'Offline'}</span>
+              <span className="font-medium">{serverStatus?.online ? 'Online' : 'Offline'}</span>
             </div>
-            <div className="h-4 w-[1px] bg-white/10" />
+            <div className="h-4 w-[1px] bg-white/20" />
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              <span data-testid="text-player-count">{serverStatus?.currentPlayers || 0} / {serverStatus?.maxPlayers || 200} Players</span>
+              <span data-testid="text-player-count" className="font-medium">
+                {serverStatus?.currentPlayers || 0} / {serverStatus?.maxPlayers || 200} Players
+              </span>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       </motion.div>
 
-      {/* Scroll Indicator */}
+      {/* Enhanced Scroll Indicator */}
       <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2 }}
       >
-        <ChevronDown className="h-8 w-8 text-primary/50" />
+        <motion.span
+          className="text-xs text-gray-500 uppercase tracking-widest"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          Scroll to explore
+        </motion.span>
+        <motion.div
+          className="relative"
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <ChevronDown className="h-8 w-8 text-primary/50" />
+          <motion.div
+            className="absolute inset-0"
+            animate={{ y: [0, 5, 0], opacity: [0, 1, 0] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
+          >
+            <ChevronDown className="h-8 w-8 text-primary/30" />
+          </motion.div>
+        </motion.div>
       </motion.div>
     </section>
   );

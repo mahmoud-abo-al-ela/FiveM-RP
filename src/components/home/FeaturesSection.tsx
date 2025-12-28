@@ -74,25 +74,27 @@ export function FeaturesSection() {
   const y = useTransform(scrollYProgress, [0, 1], ["12%", "-12%"]);
 
   return (
-    <section ref={sectionRef} className="py-24 relative">
+    <section ref={sectionRef} className="py-8 relative">
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] z-0" />
       <motion.div style={{ y }} className="container mx-auto px-4 relative">
       
       <motion.div 
-        className="text-center mb-16 relative z-10"
+        className="mb-8 relative z-10"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
       >
-        <h2 className="text-4xl font-display font-bold uppercase mb-4">
-          Why Choose <span className="text-primary">Legacy RP</span>
+        <h2 className="text-2xl md:text-4xl font-display font-bold uppercase mb-6">
+          Why Choose <motion.span 
+                className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary relative"
+                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+                style={{ backgroundSize: "200% 200%" }}
+              >Legacy RP</motion.span>
         </h2>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Experience roleplay like never before with our cutting-edge features
-        </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 mb-4">
         {features.map((feature, i) => (
           <motion.div
             key={i}
@@ -109,12 +111,7 @@ export function FeaturesSection() {
                 initial={false}
               />
               <CardHeader className="relative z-10">
-                <motion.div
-                  whileHover={{ rotate: 360, scale: 1.2 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <feature.icon className={`h-12 w-12 ${feature.color} mb-4`} />
-                </motion.div>
+                <feature.icon className={`h-12 w-12 ${feature.color} mb-4`} />
                 <CardTitle className="text-xl font-display uppercase tracking-wide">{feature.title}</CardTitle>
               </CardHeader>
               <CardContent className="relative z-10">
