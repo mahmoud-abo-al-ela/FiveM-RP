@@ -21,11 +21,21 @@ export async function middleware(request: NextRequest) {
     "/api/server-status",
   ];
 
+  // SEO and metadata files (always public)
+  const seoFiles = [
+    "/sitemap.xml",
+    "/robots.txt",
+    "/manifest.webmanifest",
+    "/favicon.ico",
+    "/site.webmanifest",
+  ];
+
   if (
     publicApiRoutes.some((route) => pathname.startsWith(route)) ||
+    seoFiles.some((file) => pathname === file) ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/public") ||
-    pathname.match(/\.(svg|png|jpg|jpeg|gif|webp)$/)
+    pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico)$/)
   ) {
     return response;
   }
