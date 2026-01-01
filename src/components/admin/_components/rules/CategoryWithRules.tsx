@@ -69,7 +69,7 @@ export function CategoryWithRules({
     : Folder;
 
   return (
-    <Card ref={setNodeRef} style={style} className="group hover:shadow-md transition-shadow">
+    <Card ref={setNodeRef} style={style} className="group hover:shadow-md transition-shadow" dir="rtl">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">

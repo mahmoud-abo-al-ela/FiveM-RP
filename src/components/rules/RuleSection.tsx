@@ -1,9 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Folder } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface RuleCategory {
   id: number;
@@ -76,7 +81,7 @@ export function RuleSection({ category, items }: RuleSectionProps) {
           <p className="text-lg">No rules in this category yet.</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <Accordion type="single" collapsible className="space-y-4">
           {items.map((rule, i) => (
             <motion.div
               key={rule.id}
@@ -84,17 +89,31 @@ export function RuleSection({ category, items }: RuleSectionProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.05 }}
             >
-              <Card className="group relative bg-card/50 backdrop-blur-sm border-white/5 hover:border-white/20 transition-all duration-300 hover:shadow-xl overflow-hidden">
+              <AccordionItem
+                value={`rule-${rule.id}`}
+                className="group relative bg-card/50 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-all duration-300 hover:shadow-xl overflow-hidden rounded-xl data-[state=open]:border-white/30 data-[state=open]:shadow-2xl"
+                dir="rtl"
+                style={{
+                  boxShadow: `0 0 0 0 ${category.color}00`,
+                  transition: 'all 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 0 30px ${category.color}20`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = `0 0 0 0 ${category.color}00`;
+                }}
+              >
                 <div
-                  className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-2"
+                  className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-2 group-data-[state=open]:w-2"
                   style={{
                     background: `linear-gradient(180deg, ${category.color}80 0%, ${category.color}40 100%)`,
                   }}
                 />
-                <CardHeader className="pl-6">
-                  <CardTitle className="text-lg font-bold flex items-center gap-3">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline group/trigger">
+                  <div className="text-lg font-bold flex items-center gap-3 flex-1">
                     <span
-                      className="flex items-center justify-center w-10 h-10 rounded-lg font-mono text-sm shrink-0"
+                      className="flex items-center justify-center w-10 h-10 rounded-lg font-mono text-sm shrink-0 transition-all duration-300 group-hover/trigger:scale-110"
                       style={{
                         backgroundColor: `${category.color}20`,
                         color: category.color,
@@ -103,20 +122,28 @@ export function RuleSection({ category, items }: RuleSectionProps) {
                     >
                       {i + 1}
                     </span>
-                    <span className="flex-1">{rule.title}</span>
-                  </CardTitle>
-                </CardHeader>
+                    <span className="flex-1 text-right transition-colors duration-300 group-hover/trigger:text-white">
+                      {rule.title}
+                    </span>
+                  </div>
+                </AccordionTrigger>
                 {rule.description && (
-                  <CardContent className="pl-6">
-                    <p className="text-muted-foreground leading-relaxed pl-[52px]">
-                      {rule.description}
-                    </p>
-                  </CardContent>
+                  <AccordionContent className="px-6 pb-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                    >
+                      <p className="text-base md:text-lg text-muted-foreground leading-relaxed pr-12">
+                        {rule.description}
+                      </p>
+                    </motion.div>
+                  </AccordionContent>
                 )}
-              </Card>
+              </AccordionItem>
             </motion.div>
           ))}
-        </div>
+        </Accordion>
       )}
     </motion.div>
   );

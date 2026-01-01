@@ -31,7 +31,7 @@ export function RuleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent dir="rtl">
         <DialogHeader>
           <DialogTitle>
             {editingRule ? "Edit Rule" : "Create Rule"}

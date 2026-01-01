@@ -60,8 +60,7 @@ export function CategoryTab({ category, IconComponent }: CategoryTabProps) {
         className="h-4 w-4"
         style={{ color: isActive ? category.color : undefined }}
       />
-      <span className="hidden sm:inline">{category.name}</span>
-      <span className="sm:hidden">{category.name.substring(0, 3)}</span>
+      <h2 className="text-base md:text-lg">{category.name}</h2>
     </TabsTrigger>
   );
 }

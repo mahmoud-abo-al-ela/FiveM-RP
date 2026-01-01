@@ -22,7 +22,7 @@ export function CategoryDialog({
 }: CategoryDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent dir="rtl">
         <DialogHeader>
           <DialogTitle>
             {editingCategory ? "Edit Category" : "Create Category"}
