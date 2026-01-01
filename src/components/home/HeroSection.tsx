@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Users, ChevronDown, MessageCircle, Zap } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
+import Link from "next/link";
 
 interface HeroSectionProps {
   serverStatus?: {
@@ -210,7 +211,7 @@ export function HeroSection({ serverStatus }: HeroSectionProps) {
               <span className="font-bold tracking-wider">Connect Now</span>
             </Button>
             
-            <a href="https://discord.gg/vhCDeprYcV" target="_blank" rel="noopener noreferrer">
+            <Link href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/vhCDeprYcV"} target="_blank" rel="noopener noreferrer">
               <Button 
                 data-testid="button-discord"
                 size="lg" 
@@ -220,7 +221,7 @@ export function HeroSection({ serverStatus }: HeroSectionProps) {
                 <MessageCircle className="mr-2 h-5 w-5" />
                 <span className="font-bold tracking-wider">Join Discord</span>
               </Button>
-            </a>
+            </Link>
           </motion.div>
 
           {/* Server Status */}
