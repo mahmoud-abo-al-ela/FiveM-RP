@@ -42,26 +42,26 @@ export default function Store() {
   const vehicleTotalPages = Math.ceil(vehicleItems.length / ITEMS_PER_PAGE);
 
   return (
-    <div className="container mx-auto px-4 py-24 min-h-screen">
+    <div className="container mx-auto px-4 py-12 min-h-screen">
       <StoreHero />
 
       <Tabs defaultValue="vip" className="max-w-6xl mx-auto">
         <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-white/10 p-1 mb-12 h-auto">
           <TabsTrigger
             value="vip"
-            className="data-[state=active]:bg-primary data-[state=active]:text-white font-display uppercase tracking-wider py-4 gap-2 text-lg"
+            className="cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-white font-display uppercase tracking-wider py-4 gap-2 text-lg"
           >
             <Crown className="h-5 w-5" /> VIP Status
           </TabsTrigger>
           <TabsTrigger
             value="money"
-            className="data-[state=active]:bg-green-600 data-[state=active]:text-white font-display uppercase tracking-wider py-4 gap-2 text-lg"
+            className="cursor-pointer data-[state=active]:bg-green-600 data-[state=active]:text-white font-display uppercase tracking-wider py-4 gap-2 text-lg"
           >
             <DollarSign className="h-5 w-5" /> In-Game Money
           </TabsTrigger>
           <TabsTrigger
             value="vehicles"
-            className="data-[state=active]:bg-secondary data-[state=active]:text-black font-display uppercase tracking-wider py-4 gap-2 text-lg"
+            className="cursor-pointer data-[state=active]:bg-secondary data-[state=active]:text-black font-display uppercase tracking-wider py-4 gap-2 text-lg"
           >
             <Car className="h-5 w-5" /> Vehicles
           </TabsTrigger>

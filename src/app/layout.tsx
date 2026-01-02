@@ -15,10 +15,11 @@ export const metadata: Metadata = {
     template: "%s | LEGACY RP",
   },
   description:
-    "Experience the next generation of FiveM roleplay. Custom framework, player-driven economy, and infinite possibilities.",
+    "Egyptian FiveM Roleplay Server",
   keywords: [
     "FiveM",
     "roleplay",
+    "Egypt",
     "GTA V",
     "RP server",
     "gaming",
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
     url: "/",
     title: "LEGACY RP - FiveM Roleplay Server",
     description:
-      "Experience the next generation of FiveM roleplay. Custom framework, player-driven economy, and infinite possibilities.",
+      "Egyptian FiveM Roleplay Server",
     siteName: "LEGACY RP",
     images: [
       {
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "LEGACY RP - FiveM Roleplay Server",
     description:
-      "Experience the next generation of FiveM roleplay. Custom framework, player-driven economy, and infinite possibilities.",
+     "Egyptian FiveM Roleplay Server",
     images: ["/Logos/logo.png"],
   },
   robots: {

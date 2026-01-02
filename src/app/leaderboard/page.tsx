@@ -60,7 +60,7 @@ export default function LeaderboardPage() {
   ];
 
   return (
-    <div className="min-h-screen py-24">
+    <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <LeaderboardHero />
 

@@ -74,7 +74,7 @@ export function VipTab({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`relative ${pkg.popular ? "md:-mt-8 md:mb-8" : ""}`}
+              className={`relative ${pkg.popular ? "md:-mt-3 md:mb-8" : ""}`}
             >
               {pkg.popular && (
                 <div className="absolute -top-4 left-0 right-0 flex justify-center z-10">

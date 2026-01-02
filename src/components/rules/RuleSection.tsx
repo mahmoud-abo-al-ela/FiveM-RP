@@ -69,7 +69,7 @@ export function RuleSection({ category, items }: RuleSectionProps) {
             {category.name}
           </h2>
           {category.description && (
-            <p className="text-base text-muted-foreground leading-relaxed">
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
               {category.description}
             </p>
           )}
@@ -91,7 +91,7 @@ export function RuleSection({ category, items }: RuleSectionProps) {
             >
               <AccordionItem
                 value={`rule-${rule.id}`}
-                className="group relative bg-card/50 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-all duration-300 hover:shadow-xl overflow-hidden rounded-xl data-[state=open]:border-white/30 data-[state=open]:shadow-2xl"
+                className=" group relative bg-card/50 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-all duration-300 hover:shadow-xl overflow-hidden rounded-xl data-[state=open]:border-white/30 data-[state=open]:shadow-2xl"
                 dir="rtl"
                 style={{
                   boxShadow: `0 0 0 0 ${category.color}00`,
@@ -110,7 +110,7 @@ export function RuleSection({ category, items }: RuleSectionProps) {
                     background: `linear-gradient(180deg, ${category.color}80 0%, ${category.color}40 100%)`,
                   }}
                 />
-                <AccordionTrigger className="px-6 py-4 hover:no-underline group/trigger">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline group/trigger cursor-pointer">
                   <div className="text-lg font-bold flex items-center gap-3 flex-1">
                     <span
                       className="flex items-center justify-center w-10 h-10 rounded-lg font-mono text-sm shrink-0 transition-all duration-300 group-hover/trigger:scale-110"
